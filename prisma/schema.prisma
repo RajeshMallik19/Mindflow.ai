@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  artifacts     Artifact[]
+  conversations Conversation[]
+
+  @@map("projects")
+}
+
+model Artifact {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String // e.g. "problem_statement" | "persona" | "user_stories" | "ia" | "user_flow" | "wireframe"
+  title     String
+  content   String // JSON or Markdown, depending on type
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions ArtifactVersion[]
+
+  @@index([projectId])
+  @@map("artifacts")
+}
+
+model ArtifactVersion {
+  id         String   @id @default(cuid())
+  artifactId String
+  content    String
+  note       String   @default("")
+  createdAt  DateTime @default(now())
+
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@index([artifactId])
+  @@map("artifact_versions")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  projectId String?
+  title     String   @default("Untitled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([projectId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // "user" | "assistant" | "subagent"
+  subagentId     String? // populated when role = "subagent", matches lib/subagents.ts ids
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
