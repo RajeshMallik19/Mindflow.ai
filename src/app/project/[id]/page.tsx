@@ -106,21 +106,7 @@ async function ProjectContent({ id }: { id: string }) {
   );
 }
 
-function ProjectWorkspace({ id }: { id: string }) {
-  return (
-    <>
-      <Suspense fallback={<ProjectSidebarFallback />}>
-        <ProjectSidebar />
-      </Suspense>
-
-      <Suspense fallback={<ProjectContentFallback />}>
-        <ProjectContent id={id} />
-      </Suspense>
-    </>
-  );
-}
-
-export default async function ProjectPage({
+async function ProjectWorkspace({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -129,17 +115,33 @@ export default async function ProjectPage({
 
   return (
     <div className="flex h-full flex-1">
-      <Suspense
-        fallback={
-          <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-            Loading workspace...
-          </div>
-        }
-      >
-        <ProjectWorkspace id={id} />
+      <Suspense fallback={<ProjectSidebarFallback />}>
+        <ProjectSidebar />
+      </Suspense>
+
+      <Suspense fallback={<ProjectContentFallback />}>
+        <ProjectContent id={id} />
       </Suspense>
 
       <CopilotPanel projectId={id} />
     </div>
+  );
+}
+
+export default function ProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full flex-1 items-center justify-center text-sm text-muted-foreground">
+          Loading workspace...
+        </div>
+      }
+    >
+      <ProjectWorkspace params={params} />
+    </Suspense>
   );
 }
