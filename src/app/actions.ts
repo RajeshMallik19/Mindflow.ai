@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 
@@ -11,4 +12,10 @@ export async function createProject(formData: FormData) {
 
   await db.project.create({ data: { name, description } });
   revalidatePath("/");
+}
+
+export async function createProjectAndRedirect(name: string, description: string) {
+  const project = await db.project.create({ data: { name, description } });
+  revalidatePath("/");
+  redirect(`/project/${project.id}`);
 }

@@ -10,6 +10,7 @@ import {
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { CopilotPanel } from "@/components/workspace/copilot-panel";
 import { NewProjectDialog } from "@/components/workspace/new-project-dialog";
+import { QuickActionCard } from "@/components/workspace/quick-action-card";
 import { db } from "@/lib/db";
 import type { Project } from "@/lib/types";
 
@@ -17,22 +18,28 @@ const QUICK_ACTIONS = [
   {
     title: "New Research",
     description: "Give the Research Agent a topic to investigate.",
+    defaultName: "Untitled research",
+    defaultDescription: "",
   },
   {
     title: "New Product Thinking project",
     description: "Turn an idea into personas, user stories, and an IA.",
+    defaultName: "Untitled product",
+    defaultDescription: "",
   },
   {
     title: "New Design project",
     description: "Generate wireframes from an existing IA and personas.",
+    defaultName: "Untitled design",
+    defaultDescription: "",
   },
 ];
 
 function SidebarFallback() {
   return (
-    <aside className="h-full w-64 shrink-0 animate-pulse border-r bg-zinc-50/50 dark:bg-zinc-950/50">
+    <aside className="h-full w-64 shrink-0 animate-pulse border-r bg-muted/50">
       <div className="px-4 py-4 text-sm font-semibold">MindFlow AI</div>
-      <div className="px-4 py-3 text-xs text-zinc-500">
+      <div className="px-4 py-3 text-xs text-muted-foreground">
         Loading projects...
       </div>
     </aside>
@@ -42,7 +49,7 @@ function SidebarFallback() {
 function RecentProjectsFallback() {
   return (
     <section>
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500">
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
         Recent projects
       </h2>
       <Card>
@@ -79,7 +86,7 @@ async function RecentProjects() {
 
   return (
     <section>
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500">
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
         Recent projects
       </h2>
 
@@ -96,7 +103,7 @@ async function RecentProjects() {
         <div className="flex flex-col gap-2">
           {projects.map((project) => (
             <Link key={project.id} href={`/project/${project.id}`}>
-              <Card className="transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <Card className="transition-colors hover:bg-accent">
                 <CardHeader>
                   <CardTitle className="text-sm">
                     {project.name}
@@ -127,27 +134,18 @@ export default function Home() {
             <h1 className="text-2xl font-semibold tracking-tight">
               Welcome back
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Your personal, local-first AI workspace.
             </p>
           </div>
 
           <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
               Quick actions
             </h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {QUICK_ACTIONS.map((action) => (
-                <Card key={action.title}>
-                  <CardHeader>
-                    <CardTitle className="text-sm">
-                      {action.title}
-                    </CardTitle>
-                    <CardDescription>
-                      {action.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <QuickActionCard key={action.title} {...action} />
               ))}
             </div>
           </section>

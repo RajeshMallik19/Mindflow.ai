@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -25,19 +26,53 @@ type StreamEvent =
   | { type: "done" }
   | { type: "error"; error: string };
 
-export function CopilotPanel() {
-  const [messages, setMessages] = useState<CopilotMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "I'm the MindFlow copilot. Ask me anything, or give me a task and I'll route it to the right subagent.",
-    },
-  ]);
+const WELCOME_MESSAGE: CopilotMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "I'm the MindFlow copilot. Ask me anything, or give me a task and I'll route it to the right subagent.",
+};
 
+export function CopilotPanel({ projectId }: { projectId?: string }) {
+  const [messages, setMessages] = useState<CopilotMessage[]>([WELCOME_MESSAGE]);
   const [draft, setDraft] = useState("");
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(!projectId);
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    let cancelled = false;
+
+    fetch(`/api/orchestrator?projectId=${encodeURIComponent(projectId)}`)
+      .then((res) => res.json())
+      .then((data: { conversationId: string | null; messages: Array<{ id: string; role: string; content: string; subagentName?: string }> }) => {
+        if (cancelled) return;
+
+        if (data.conversationId && data.messages.length > 0) {
+          setConversationId(data.conversationId);
+          setMessages(
+            data.messages.map((m) => ({
+              id: m.id,
+              role: m.role === "user" ? "user" : "assistant",
+              content: m.content,
+              subagentName: m.subagentName,
+            })),
+          );
+        }
+      })
+      .catch(() => {
+        // History failed to load — fall back to the welcome message, non-fatal.
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   async function send() {
     const text = draft.trim();
@@ -72,7 +107,7 @@ export function CopilotPanel() {
           "Content-Type": "application/json",
           Accept: "application/x-ndjson",
         },
-        body: JSON.stringify({ task: text, conversationId }),
+        body: JSON.stringify({ task: text, projectId, conversationId }),
       });
 
       if (!res.ok) {
@@ -161,7 +196,7 @@ export function CopilotPanel() {
   }
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-l bg-zinc-50/50 dark:bg-zinc-950/50">
+    <aside className="flex h-full w-80 shrink-0 flex-col border-l bg-muted/50">
       <div className="px-4 py-4">
         <span className="text-sm font-semibold tracking-tight">
           AI Copilot
@@ -172,10 +207,14 @@ export function CopilotPanel() {
 
       <ScrollArea className="flex-1 px-4 py-3">
         <div className="flex flex-col gap-3">
+          {!historyLoaded && (
+            <p className="px-1 text-sm text-muted-foreground">Loading history…</p>
+          )}
+
           {messages.map((message) => (
             <div key={message.id} className="flex flex-col gap-1">
               {message.subagentName && (
-                <span className="px-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                <span className="px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   {message.subagentName}
                 </span>
               )}
@@ -183,17 +222,21 @@ export function CopilotPanel() {
               <div
                 className={
                   message.role === "assistant"
-                    ? "whitespace-pre-wrap rounded-md bg-zinc-200/60 px-3 py-2 text-sm dark:bg-zinc-800/60"
-                    : "whitespace-pre-wrap rounded-md bg-zinc-900 px-3 py-2 text-sm text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+                    ? "rounded-md bg-muted px-3 py-2 text-sm [&_*]:my-1 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_strong]:font-semibold"
+                    : "whitespace-pre-wrap rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
                 }
               >
-                {message.content}
+                {message.role === "assistant" ? (
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                ) : (
+                  message.content
+                )}
 
                 {pending &&
                   message.role === "assistant" &&
                   message.id === messages[messages.length - 1]?.id &&
                   !message.content && (
-                    <span className="text-zinc-500">Thinking...</span>
+                    <span className="text-muted-foreground">Thinking...</span>
                   )}
               </div>
             </div>

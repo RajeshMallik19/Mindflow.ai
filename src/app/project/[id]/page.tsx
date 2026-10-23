@@ -1,25 +1,21 @@
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import type { Node, Edge } from "@xyflow/react";
-import { FlowEditor } from "@/components/workspace/flow-editor";
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { CopilotPanel } from "@/components/workspace/copilot-panel";
+import { PipelineView } from "@/components/workspace/pipeline-view";
+import { parseFlowArtifact } from "@/lib/flow-artifact";
 import { db } from "@/lib/db";
+import { STAGES, type StageId } from "@/lib/pipeline";
 import type { Project } from "@/lib/types";
-
-type FlowData = {
-  nodes: Node[];
-  edges: Edge[];
-};
 
 function ProjectSidebarFallback() {
   return (
-    <aside className="h-full w-64 shrink-0 border-r bg-zinc-50/50 dark:bg-zinc-950/50">
+    <aside className="h-full w-64 shrink-0 border-r bg-muted/50">
       <div className="px-4 py-4 text-sm font-semibold">
         MindFlow AI
       </div>
-      <div className="px-4 py-3 text-xs text-zinc-500">
+      <div className="px-4 py-3 text-xs text-muted-foreground">
         Loading projects...
       </div>
     </aside>
@@ -34,7 +30,7 @@ function ProjectContentFallback() {
           Loading project...
         </h1>
       </div>
-      <div className="flex-1 p-6 text-sm text-zinc-500">
+      <div className="flex-1 p-6 text-sm text-muted-foreground">
         Preparing your workspace...
       </div>
     </main>
@@ -56,6 +52,8 @@ async function ProjectSidebar() {
   return <AppSidebar projects={sidebarProjects} />;
 }
 
+const STAGE_IDS = new Set<string>(STAGES.map((s) => s.id));
+
 async function ProjectContent({ id }: { id: string }) {
   const project = await db.project.findUnique({
     where: { id },
@@ -65,31 +63,22 @@ async function ProjectContent({ id }: { id: string }) {
     notFound();
   }
 
-  const flowArtifact = await db.artifact.findFirst({
-    where: { projectId: id, type: "user_flow" },
+  const artifacts = await db.artifact.findMany({
+    where: { projectId: id, type: { in: [...STAGE_IDS, "ia_diagram"] } },
   });
 
-  let initial: FlowData | undefined;
+  const initialArtifacts: Partial<Record<StageId, unknown>> = {};
+  let initialIaDiagram;
 
-  if (flowArtifact) {
+  for (const artifact of artifacts) {
+    if (artifact.type === "ia_diagram") {
+      initialIaDiagram = parseFlowArtifact(artifact.content);
+      continue;
+    }
     try {
-      const parsed: unknown = JSON.parse(flowArtifact.content);
-
-      if (
-        typeof parsed === "object" &&
-        parsed !== null &&
-        "nodes" in parsed &&
-        "edges" in parsed &&
-        Array.isArray(parsed.nodes) &&
-        Array.isArray(parsed.edges)
-      ) {
-        initial = {
-          nodes: parsed.nodes as Node[],
-          edges: parsed.edges as Edge[],
-        };
-      }
+      initialArtifacts[artifact.type as StageId] = JSON.parse(artifact.content);
     } catch {
-      initial = undefined;
+      // Skip artifacts that somehow don't contain valid JSON.
     }
   }
 
@@ -100,26 +89,24 @@ async function ProjectContent({ id }: { id: string }) {
           {project.name}
         </h1>
         {project.description && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             {project.description}
           </p>
         )}
       </div>
 
-      <div className="flex-1">
-        <FlowEditor projectId={project.id} initial={initial} />
+      <div className="flex-1 overflow-hidden">
+        <PipelineView
+          projectId={project.id}
+          initialArtifacts={initialArtifacts}
+          initialIaDiagram={initialIaDiagram}
+        />
       </div>
     </main>
   );
 }
 
-async function ProjectWorkspace({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-
+function ProjectWorkspace({ id }: { id: string }) {
   return (
     <>
       <Suspense fallback={<ProjectSidebarFallback />}>
@@ -133,24 +120,26 @@ async function ProjectWorkspace({
   );
 }
 
-export default function ProjectPage({
+export default async function ProjectPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   return (
     <div className="flex h-full flex-1">
       <Suspense
         fallback={
-          <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-zinc-500">
+          <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-muted-foreground">
             Loading workspace...
           </div>
         }
       >
-        <ProjectWorkspace params={params} />
+        <ProjectWorkspace id={id} />
       </Suspense>
 
-      <CopilotPanel />
+      <CopilotPanel projectId={id} />
     </div>
   );
 }

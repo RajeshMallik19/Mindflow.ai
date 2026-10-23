@@ -5,12 +5,49 @@ import { getProvider } from "@/lib/ai-provider";
 import { db } from "@/lib/db";
 import { routeTask } from "@/lib/orchestrator";
 import { buildSubagentPrompt } from "@/lib/subagent-prompts";
+import { SUBAGENTS } from "@/lib/subagents";
 
 const RequestSchema = z.object({
   task: z.string().min(1),
   projectId: z.string().optional(),
   conversationId: z.string().optional(),
 });
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const projectId = searchParams.get("projectId");
+
+  if (!projectId) {
+    return NextResponse.json(
+      { error: "projectId query param is required" },
+      { status: 400 },
+    );
+  }
+
+  const conversation = await db.conversation.findFirst({
+    where: { projectId },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  if (!conversation) {
+    return NextResponse.json({ conversationId: null, messages: [] });
+  }
+
+  const messages = await db.message.findMany({
+    where: { conversationId: conversation.id },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return NextResponse.json({
+    conversationId: conversation.id,
+    messages: messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      subagentName: SUBAGENTS.find((s) => s.id === m.subagentId)?.name,
+    })),
+  });
+}
 
 export async function POST(req: Request) {
   const parsed = RequestSchema.safeParse(await req.json());
@@ -28,14 +65,29 @@ export async function POST(req: Request) {
 
   let conversation;
   try {
-    conversation = conversationId
-      ? await db.conversation.update({
-          where: { id: conversationId },
-          data: { updatedAt: new Date() },
-        })
-      : await db.conversation.create({
-          data: { projectId, title: task.slice(0, 60) },
-        });
+    if (conversationId) {
+      conversation = await db.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      });
+    } else if (projectId) {
+      const existing = await db.conversation.findFirst({
+        where: { projectId },
+        orderBy: { updatedAt: "desc" },
+      });
+      conversation = existing
+        ? await db.conversation.update({
+            where: { id: existing.id },
+            data: { updatedAt: new Date() },
+          })
+        : await db.conversation.create({
+            data: { projectId, title: task.slice(0, 60) },
+          });
+    } else {
+      conversation = await db.conversation.create({
+        data: { title: task.slice(0, 60) },
+      });
+    }
   } catch (err) {
     return NextResponse.json(
       {

@@ -33,6 +33,7 @@ model Artifact {
   project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   versions ArtifactVersion[]
 
+  @@unique([projectId, type], map: "uq_artifacts_project_id_type")
   @@index([projectId], map: "idx_artifacts_project_id")
   @@map("artifacts")
 }

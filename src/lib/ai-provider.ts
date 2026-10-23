@@ -1,6 +1,8 @@
 
+export type GenerateOpts = { jsonMode?: boolean };
+
 export interface AIProvider {
-  generate(prompt: string): Promise<string>;
+  generate(prompt: string, opts?: GenerateOpts): Promise<string>;
   stream(prompt: string): AsyncGenerator<string>;
 }
 
@@ -27,7 +29,7 @@ class GeminiProvider implements AIProvider {
     this.model = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
   }
 
-  async generate(prompt: string): Promise<string> {
+  async generate(prompt: string, opts?: GenerateOpts): Promise<string> {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
       {
@@ -35,6 +37,9 @@ class GeminiProvider implements AIProvider {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          ...(opts?.jsonMode
+            ? { generationConfig: { responseMimeType: "application/json" } }
+            : {}),
         }),
         signal: AbortSignal.timeout(120_000),
       },
@@ -132,7 +137,7 @@ class OpenRouterProvider implements AIProvider {
     this.model = process.env.OPENROUTER_MODEL?.trim() || "google/gemma-4-31b-it:free";
   }
 
-  async generate(prompt: string): Promise<string> {
+  async generate(prompt: string, opts?: GenerateOpts): Promise<string> {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -142,6 +147,7 @@ class OpenRouterProvider implements AIProvider {
       body: JSON.stringify({
         model: this.model,
         messages: [{ role: "user", content: prompt }],
+        ...(opts?.jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
       signal: AbortSignal.timeout(120_000),
     });
@@ -226,7 +232,7 @@ class OpenRouterProvider implements AIProvider {
 class OllamaProvider implements AIProvider {
   constructor(private model: string = "llama3.2:3b") {}
 
-  async generate(prompt: string): Promise<string> {
+  async generate(prompt: string, opts?: GenerateOpts): Promise<string> {
     const host = (
       process.env.OLLAMA_HOST || "http://localhost:11434"
     ).replace(/\/+$/, "");
@@ -238,6 +244,7 @@ class OllamaProvider implements AIProvider {
         model: this.model,
         prompt,
         stream: false,
+        ...(opts?.jsonMode ? { format: "json" } : {}),
       }),
       signal: AbortSignal.timeout(240_000),
     });
