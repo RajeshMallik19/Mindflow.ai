@@ -99,15 +99,18 @@ class GeminiProvider implements AIProvider {
             const payload = line.slice(5).trim();
             if (!payload || payload === "[DONE]") continue;
 
-            let data: any;
+            let data: unknown;
             try {
               data = JSON.parse(payload);
             } catch {
               continue;
             }
 
-            const text = data?.candidates?.[0]?.content?.parts
-              ?.map((part: { text?: string }) => part.text ?? "")
+            const typed = data as {
+              candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+            };
+            const text = typed?.candidates?.[0]?.content?.parts
+              ?.map((part) => part.text ?? "")
               .join("");
 
             if (text) yield text;
@@ -198,14 +201,17 @@ class OpenRouterProvider implements AIProvider {
           const payload = line.slice(5).trim();
           if (!payload || payload === "[DONE]") continue;
 
-          let data: any;
+          let data: unknown;
           try {
             data = JSON.parse(payload);
           } catch {
             continue;
           }
 
-          const text = data?.choices?.[0]?.delta?.content;
+          const typed = data as {
+            choices?: Array<{ delta?: { content?: string } }>;
+          };
+          const text = typed?.choices?.[0]?.delta?.content;
           if (text) yield text;
         }
 

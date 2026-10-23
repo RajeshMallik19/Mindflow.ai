@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MindFlow AI
 
-## Getting Started
+A personal, product-design AI workspace. See `.docs/PRD.md` for the full
+story — short version: an orchestrator routes tasks to named subagents
+(Research, IA Maker, Persona Maker, User Stories Maker, Design Agent), with
+a diagram editor and (eventually) a real Figma push and a personal
+knowledge/RAG layer. Built to run on free tiers only and to outlive any
+single employer.
 
-First, run the development server:
+## Quick start
 
 ```bash
+npm install
+npx prisma generate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables (`.env`, not committed)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+DATABASE_URL=            # Supabase Postgres connection string
+AI_PROVIDER=gemini       # gemini | openrouter | ollama | echo
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=nvidia/nemotron-3.5-lightning:free
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+```
 
-## Learn More
+`AI_PROVIDER` picks which of the above actually gets used; only that
+provider's variables need to be set. See `.docs/API_SPEC.md` for details and
+known quirks of each.
 
-To learn more about Next.js, take a look at the following resources:
+## Project docs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See `.docs/`:
+- `PRD.md` — what this is, constraints, and what's explicitly out of scope
+- `ARCHITECTURE.md` — stack, folder layout, the orchestrator pattern
+- `DATAMODEL.md` — database schema and ER diagram
+- `API_SPEC.md` — routes and third-party integrations
+- `UI_UX_SPEC.md` — pages, components, user journeys
+- `TASKS.md` — live progress checklist — **read this first**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Useful commands
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx tsc --noEmit        # type-check
+npm run lint            # eslint
+npx prisma studio       # browse the database
+npx prisma db push      # sync schema.prisma to the database
+```
