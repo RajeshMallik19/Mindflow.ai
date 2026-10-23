@@ -22,6 +22,22 @@ a new session should scan to know what's done and what's next.
       (`RajeshMallik19/Mindflow.ai`) — the project no longer lives only on a
       company-owned laptop
 - [x] Project documentation suite (this folder)
+- [x] Full 5-stage pipeline: Research -> Personas -> User Stories -> IA ->
+      Wireframes, each a real subagent call with structured (Zod-validated)
+      JSON output, prerequisite-enforced, each stage feeding the next.
+      Rendered as real cards (not prose), IA as an auto-laid-out editable
+      diagram. Research has a Plain/Gossip tone toggle.
+- [x] Fixed: copilot history no longer vanishes on reload; copilot is now
+      project-scoped; AI responses render as real Markdown; replaced
+      `window.prompt()` with a proper Dialog; removed 4 dead sidebar nav
+      links; Quick Action cards now create a project and redirect.
+- [x] Visual pass: one indigo accent color (was pure grayscale), semantic
+      Tailwind tokens instead of ad-hoc `zinc-*` classes in touched files.
+- [x] `AIProvider.generate()` gained an optional `jsonMode` flag (Gemini
+      `responseMimeType`, OpenRouter `response_format`, Ollama `format:json`).
+- [x] Verified via direct API calls: all 5 stages produce real validated
+      output with correct context hand-off; prerequisite enforcement (400);
+      regeneration versions old content; copilot history survives reload.
 
 ## In progress / next up
 
@@ -34,20 +50,22 @@ a new session should scan to know what's done and what's next.
 
 ## Backlog (not started)
 
-- [ ] Research Lab: real citation UI, source credibility labeling, and the
-      "gossip mode" vs. plain-explanation toggle (an original, specific
-      requirement from the project's first brainstorm — don't drop it).
+- [ ] Research Lab: real citation UI / source credibility labeling (still
+      model-knowledge-based, not live-web-cited — no search API wired in).
+      The Plain/Gossip tone toggle itself is done.
 - [ ] Design Agent -> real Figma push (via Figma's REST API or a plugin),
-      instead of returning text-only wireframe descriptions.
+      instead of returning text-only wireframe spec cards.
 - [ ] Knowledge Brain: document upload, chunking, embeddings, retrieval
       (RAG) over the owner's own notes. Explicitly deferred until there's
       an actual document to index — don't add a vector column speculatively.
-- [ ] Wire the home page's "Quick actions" cards to actually start a
-      Research / Product-Thinking / Design flow (currently inert labels).
 - [ ] Ollama installation + local model, as a genuinely zero-quota fallback
       for local dev (user opted to try OpenRouter first instead).
 - [ ] Artifact version history UI (data model already supports it via
       `artifact_versions`; no screen reads it yet).
+- [ ] The manual Start/Action/Decision diagram tool (`flow-editor.tsx`,
+      `user_flow` artifact type) is now mostly superseded by the IA stage's
+      auto-generated diagram — decide whether to keep it as a general-purpose
+      scratch canvas or retire it.
 
 ## Known constraints to keep respecting
 
