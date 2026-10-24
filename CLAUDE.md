@@ -37,6 +37,11 @@ file and has no effect in Claude Code. This file is the equivalent.)
 - Before trusting a new AI provider/model, test it directly against its raw
   API first (see `.docs/API_SPEC.md` for a real incident where a model's
   free-tier quota was silently exhausted and looked like a broken app).
+- Run `npm run build` locally before every deploy, not just `tsc`/lint/
+  `next dev`. `next dev` does not catch Cache Components prerendering
+  errors (a page awaiting `params`/`searchParams`/`cookies()` outside
+  Suspense) — this caused a real failed first deployment that `tsc`, lint,
+  and all of dev-mode testing missed entirely.
 - Discuss significant architecture changes before scaffolding them; once
   agreed, execute without re-confirming every step.
 - Don't propose: fine-tuning a model on the owner's personal data (use RAG

@@ -281,6 +281,25 @@ a new session should scan to know what's done and what's next.
         the canvas opens `/project/[id]/report#wireframes` in a new tab,
         reusing the report's existing high-fidelity rendering and its
         Print/Save-as-PDF button. Zero new dependencies.
+- [x] **Deployed to Vercel** (owner's own account, `RajeshMallik19` GitHub ->
+      Vercel project `mindflow-ai`, production branch `master`, auto-deploy
+      on push). Live at `https://mindflow-ai-three-jet.vercel.app`. Shares
+      the same Supabase database as local dev (simplest option, per the
+      plan recorded here). `APP_PASSWORD` is set — the gate is
+      **password-only, no username field**, by original design (a single
+      shared-password deterrent, not a real auth system; see Hard
+      constraints in `CLAUDE.md`).
+      - **Real bug found on the very first deploy, not caught all session**:
+        `npm run build` failed — `/login` and `/project/[id]/report` both
+        awaited a dynamic API (`searchParams`, `params`) directly at the top
+        of the exported default page component, outside any Suspense
+        boundary. This is harmless under `next dev` (which is all this
+        session ever ran before deploying) but a hard build failure under a
+        real `next build`. Fixed both with the same sync-outer/async-inner
+        pattern already used for the project page; verified with a local
+        `npm run build` before redeploying. **Lesson for next time:** run
+        `npm run build` locally before every deploy, not just `tsc`/lint/
+        `next dev` — those don't catch this class of bug.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
@@ -292,11 +311,7 @@ a new session should scan to know what's done and what's next.
 4. ~~Re-scope copilot to Knowledge Brain lookup~~ **done.**
 5. ~~Personal Knowledge Brain v1~~ **done** (full-text search). True
    vector/RAG embeddings remain a later upgrade, not urgent.
-6. **Next up:** Deploy to Vercel (owner's own account, already connected during
-   development) — link the GitHub repo, set env vars (**including
-   `APP_PASSWORD` — do not deploy without it**), deploy. Decide whether the
-   deployed copy and local dev share one Supabase database (leaning yes,
-   for simplicity) before doing this.
+6. ~~Deploy to Vercel~~ **done.**
 
 ## Backlog (not started, lower priority than the above)
 
