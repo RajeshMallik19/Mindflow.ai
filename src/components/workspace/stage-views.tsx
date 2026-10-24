@@ -14,7 +14,6 @@ import type {
   ResearchBrief,
   UserStories,
   UxStrategy,
-  Wireframes,
 } from "@/lib/pipeline";
 
 export function ResearchView({ data }: { data: ResearchBrief }) {
@@ -240,24 +239,3 @@ export function AiInteractionDesignView({ data }: { data: AiInteractionDesign })
   );
 }
 
-export function WireframesView({ data }: { data: Wireframes }) {
-  return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {data.screens.map((s, i) => (
-        <Card key={i}>
-          <CardHeader>
-            <CardTitle className="text-sm">{s.name}</CardTitle>
-            <CardDescription>{s.purpose}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-              {s.sections.map((sec, si) => (
-                <li key={si}>{sec}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}

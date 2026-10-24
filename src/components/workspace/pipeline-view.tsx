@@ -22,8 +22,8 @@ import {
   ResearchView,
   UserStoriesView,
   UxStrategyView,
-  WireframesView,
 } from "@/components/workspace/stage-views";
+import { WireframeCanvas } from "@/components/workspace/wireframe-canvas";
 import { layoutIaSitemap } from "@/lib/ia-layout";
 import type { FlowData } from "@/lib/flow-artifact";
 import { STAGES, type StageId, type StoredResearchBrief } from "@/lib/pipeline";
@@ -249,7 +249,9 @@ export function PipelineView({
               {activeDef.id === "ai_interaction_design" && (
                 <AiInteractionDesignView data={activeData as never} />
               )}
-              {activeDef.id === "wireframes" && <WireframesView data={activeData as never} />}
+              {activeDef.id === "wireframes" && (
+                <WireframeCanvas projectId={projectId} data={activeData as never} />
+              )}
               {activeDef.id === "ia_sitemap" && (
                 <div className="h-[500px] rounded-lg border">
                   <FlowEditor

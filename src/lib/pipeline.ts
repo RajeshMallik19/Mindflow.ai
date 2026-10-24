@@ -59,16 +59,66 @@ export const IaSitemapSchema = z.object({
 });
 export type IaSitemap = z.infer<typeof IaSitemapSchema>;
 
+export const WIREFRAME_ELEMENT_TYPES = [
+  "header",
+  "nav",
+  "text",
+  "button",
+  "image",
+  "input",
+  "card",
+  "footer",
+] as const;
+
+export const WireframeElementSchema = z.object({
+  id: z.string(),
+  type: z.enum(WIREFRAME_ELEMENT_TYPES),
+  label: z.string(),
+});
+export type WireframeElement = z.infer<typeof WireframeElementSchema>;
+
+export const WireframeSectionSchema = z.object({
+  id: z.string(),
+  direction: z.enum(["row", "column"]),
+  elements: z.array(WireframeElementSchema),
+});
+export type WireframeSection = z.infer<typeof WireframeSectionSchema>;
+
+// Semantic layout, not pixel coordinates — asking a model for precise x/y/
+// width/height numbers produces messy, overlapping results. Instead each
+// screen is a top-to-bottom stack of sections, each a flex row/column of
+// typed elements; actual sizing comes from CSS per element type at render
+// time (see wireframe-canvas.tsx). This is reliable to generate and to render.
+export const WireframeScreenSchema = z.object({
+  name: z.string(),
+  device: z.enum(["mobile", "desktop"]),
+  sections: z.array(WireframeSectionSchema),
+});
+export type WireframeScreen = z.infer<typeof WireframeScreenSchema>;
+
 export const WireframesSchema = z.object({
-  screens: z.array(
-    z.object({
-      name: z.string(),
-      purpose: z.string(),
-      sections: z.array(z.string()),
-    }),
-  ),
+  screens: z.array(WireframeScreenSchema),
 });
 export type Wireframes = z.infer<typeof WireframesSchema>;
+
+// Detects artifacts saved before this schema existed ({name, purpose,
+// sections: string[]}) so the UI can show a "please regenerate" prompt
+// instead of crashing on real projects created before this change.
+export function isLegacyWireframes(parsed: unknown): boolean {
+  if (!parsed || typeof parsed !== "object" || !("screens" in parsed)) return true;
+  const screens = (parsed as { screens?: unknown }).screens;
+  if (!Array.isArray(screens) || screens.length === 0) return false;
+  const first = screens[0];
+  return !(
+    first &&
+    typeof first === "object" &&
+    "sections" in first &&
+    Array.isArray((first as { sections?: unknown }).sections) &&
+    (first as { sections: unknown[] }).sections.every(
+      (s) => s && typeof s === "object" && "elements" in s,
+    )
+  );
+}
 
 export const ProblemFramingSchema = z.object({
   problemStatement: z.string(),
@@ -283,15 +333,17 @@ ${JSON_INSTRUCTION}`;
       const strategy = ctx.upstream.ux_strategy as UxStrategy | undefined;
       const aiDesign = ctx.upstream.ai_interaction_design as AiInteractionDesign | undefined;
 
-      return `You are the Design Agent inside MindFlow AI. Produce a wireframe spec (structure, not visual styling) for the screens below.
+      return `You are the Design Agent inside MindFlow AI. Produce an actual visual wireframe layout (not a text description) for each major screen below.
 
 Project: ${ctx.project.name}
 Sitemap screens: ${nodeLabels || "(none)"}
 ${strategy ? `UX strategy recommendations: ${strategy.recommendations.join("; ")}\nInteraction principles: ${strategy.interactionPrinciples.join("; ")}\n` : ""}${aiDesign ? `AI interaction fallbacks to account for: ${aiDesign.fallbacks.join("; ")}\n` : ""}
-For each major screen, describe its purpose and its layout sections (e.g. "header with search bar", "grid of result cards", "sticky footer with CTA").
+Each screen is a top-to-bottom stack of sections. Each section is a row or column of elements. Each element has a type (one of: ${WIREFRAME_ELEMENT_TYPES.join(", ")}) and a short label describing what it actually shows (e.g. a "text" element's label might be "Product title and price", not just "text").
 
 Return JSON matching this shape:
-{ "screens": [{ "name": string, "purpose": string, "sections": string[] }] }
+{ "screens": [{ "name": string, "device": "mobile" | "desktop", "sections": [{ "id": string, "direction": "row" | "column", "elements": [{ "id": string, "type": string, "label": string }] }] }] }
+
+Guidelines: 3-6 sections per screen, 1-5 elements per section, short unique ids (e.g. "s1", "el1"). Pick "mobile" or "desktop" based on what's actually appropriate for that screen.
 
 ${JSON_INSTRUCTION}`;
     },
