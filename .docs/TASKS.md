@@ -66,17 +66,31 @@ a new session should scan to know what's done and what's next.
       font-toggle/contrast recommendations). Replaced the fixed Tabs bar
       with a grid of specialist cards you pick from — matches "open-ended
       menu, not a rigid pipeline," and scales better than tabs at 8 items.
+- [x] **Design Studio: real visual wireframes.** Wireframes stage now
+      generates semantic layout (screens -> sections -> typed elements:
+      header/nav/text/button/image/input/card/footer), rendered as actual
+      styled boxes via `wireframe-canvas.tsx`, not text spec cards. Click an
+      element to edit its type/label (side panel); "Save changes" persists
+      edits. Export: Copy as SVG, download .svg (reliable Figma import via
+      file drag-in), download .png — all built from real measured DOM
+      positions so exports match what's shown. `isLegacyWireframes()` shows
+      a "please regenerate" card instead of crashing for the 2 real
+      projects (Hackloop.ai + another) that had old-shape wireframes —
+      checked the live DB before shipping this, verified both still load.
+      Still not done: the editable-properties panel is label/type only
+      (not full style/position editing), and React prototype generation /
+      accessibility audits from the original Design Studio scope.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
 1. ~~Research Engine as a standalone pre-project entry point~~ **done.**
 2. ~~Expand specialist roster to 8 + open-ended menu~~ **done.**
-3. **Next up:** Design Studio: real visual wireframe rendering (not text
-   cards), the editable properties panel, SVG export (realistic Figma
-   path — paste SVG into Figma, see PRD §5), responsive React prototype
-   generation, accessibility audits.
-4. Re-scope the copilot to be a Knowledge Brain lookup/reference tool
-   instead of a keyword-routed dispatcher to the pipeline subagents.
+3. ~~Design Studio: real visual wireframes + export~~ **done** (core case).
+   Remaining from this item: responsive React prototype generation,
+   accessibility audits — lower priority, revisit after items 4-6 below.
+4. **Next up:** re-scope the copilot to be a Knowledge Brain lookup/
+   reference tool instead of a keyword-routed dispatcher to the pipeline
+   subagents.
 5. Personal Knowledge Brain v1: Postgres full-text search over
    projects/research/artifacts/conversations, resumable by vague
    description. True vector/RAG embeddings are a later upgrade.
