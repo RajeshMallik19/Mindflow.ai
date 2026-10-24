@@ -80,6 +80,21 @@ a new session should scan to know what's done and what's next.
       Still not done: the editable-properties panel is label/type only
       (not full style/position editing), and React prototype generation /
       accessibility audits from the original Design Studio scope.
+- [x] **Knowledge Brain v1 + re-scoped copilot.** `src/lib/knowledge-brain.ts`:
+      Postgres full-text search (on-the-fly tsvector, no migration needed)
+      across projects, artifacts, and project-scoped conversation messages.
+      New `/knowledge-brain` page: type a vague description, get ranked
+      clickable results that jump to the matching project. The copilot
+      (`/api/orchestrator`) no longer keyword-routes to a pipeline
+      specialist — it searches the Knowledge Brain per message and grounds
+      its answer in whatever it finds, matching PRD module 01's actual
+      definition. Deleted the now-unused `orchestrator.ts`,
+      `subagent-prompts.ts`, `subagents.ts`, and the stale "Subagents"
+      sidebar roster (only ever listed 5 of 8 specialists). Verified live:
+      searching "Hackloop" surfaced the real project + its actual
+      wireframes/IA artifacts; asking the copilot "what was that Hackloop
+      project about again?" (no project context) answered correctly from
+      real stored data, not a guess.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
@@ -87,14 +102,11 @@ a new session should scan to know what's done and what's next.
 2. ~~Expand specialist roster to 8 + open-ended menu~~ **done.**
 3. ~~Design Studio: real visual wireframes + export~~ **done** (core case).
    Remaining from this item: responsive React prototype generation,
-   accessibility audits — lower priority, revisit after items 4-6 below.
-4. **Next up:** re-scope the copilot to be a Knowledge Brain lookup/
-   reference tool instead of a keyword-routed dispatcher to the pipeline
-   subagents.
-5. Personal Knowledge Brain v1: Postgres full-text search over
-   projects/research/artifacts/conversations, resumable by vague
-   description. True vector/RAG embeddings are a later upgrade.
-6. Deploy to Vercel (owner's own account, already connected during
+   accessibility audits — lower priority.
+4. ~~Re-scope copilot to Knowledge Brain lookup~~ **done.**
+5. ~~Personal Knowledge Brain v1~~ **done** (full-text search). True
+   vector/RAG embeddings remain a later upgrade, not urgent.
+6. **Next up:** Deploy to Vercel (owner's own account, already connected during
    development) — link the GitHub repo, set env vars, deploy. Decide
    whether the deployed copy and local dev share one Supabase database
    (leaning yes, for simplicity) before doing this.
