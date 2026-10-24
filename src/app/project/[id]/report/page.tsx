@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -192,11 +193,7 @@ function WireframeScreens({ data }: { data: Wireframes }) {
   );
 }
 
-export default async function ProjectReportPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+async function ReportContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const project = await db.project.findUnique({ where: { id } });
@@ -296,5 +293,23 @@ export default async function ProjectReportPage({
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProjectReportPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full flex-1 items-center justify-center text-sm text-muted-foreground">
+          Loading report...
+        </div>
+      }
+    >
+      <ReportContent params={params} />
+    </Suspense>
   );
 }

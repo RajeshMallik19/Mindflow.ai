@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ async function login(formData: FormData) {
   redirect("/");
 }
 
-export default async function LoginPage({
+async function LoginForm({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
@@ -35,13 +36,25 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
+    <form action={login} className="flex w-72 flex-col gap-3">
+      <h1 className="text-lg font-semibold tracking-tight">MindFlow AI</h1>
+      <Input type="password" name="password" placeholder="Password" autoFocus />
+      {error && <p className="text-sm text-destructive">Wrong password.</p>}
+      <Button type="submit">Enter</Button>
+    </form>
+  );
+}
+
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  return (
     <div className="flex h-full flex-1 items-center justify-center">
-      <form action={login} className="flex w-72 flex-col gap-3">
-        <h1 className="text-lg font-semibold tracking-tight">MindFlow AI</h1>
-        <Input type="password" name="password" placeholder="Password" autoFocus />
-        {error && <p className="text-sm text-destructive">Wrong password.</p>}
-        <Button type="submit">Enter</Button>
-      </form>
+      <Suspense fallback={<div className="w-72" />}>
+        <LoginForm searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }
