@@ -38,26 +38,47 @@ a new session should scan to know what's done and what's next.
 - [x] Verified via direct API calls: all 5 stages produce real validated
       output with correct context hand-off; prerequisite enforcement (400);
       regeneration versions old content; copilot history survives reload.
+- [x] **Full PRD rewrite** (`.docs/PRD.md`) to the authoritative 5-module
+      vision: General Assistant (re-scoped as Knowledge Brain lookup, not
+      yet re-scoped in code), Research Agent, Product Design Agent (8
+      specialists), Design Studio (real visual wireframes + editable panel
+      + React prototypes), Personal Knowledge Brain (resumable search).
+      Also documents the confirmed Figma REST API write limitation.
+- [x] **Research Engine**, standalone and project-independent: `/research`
+      page, runs research with no project required (not persisted until
+      converted). Gen-Z gossip mode is a **conversion step on an existing
+      result**, not an upfront either/or choice — `/api/research/gossip`
+      (standalone) and `/api/pipeline/gossip` (in-project, persisted)
+      rewrite an already-generated brief into gossip tone, same facts.
+      "Turn this into a project" creates the project and seeds its
+      research_brief artifact in one action. research_brief storage shape
+      is now `{simple, gossip?}` everywhere; downstream stages always read
+      `.simple`. Added `normalizeStoredResearchBrief()` for back-compat
+      with artifacts stored before this change (caught a real crash on the
+      owner's own Hackloop.ai project during testing).
 
-## In progress / next up
+## Recommended build order for the rest (per PRD.md §7)
 
-- [ ] Deploy to Vercel (owner's own account, already connected during
-      development) — link the GitHub repo, set `DATABASE_URL` and whichever
-      `AI_PROVIDER` env vars are needed, deploy.
-- [ ] Decide: does the deployed (Vercel) copy and local dev copy share the
-      same Supabase database, or does local dev get its own? Leaning toward
-      **one shared database** for simplicity — confirm before deploying.
+1. ~~Research Engine as a standalone pre-project entry point~~ **done.**
+2. **Next up:** re-scope the Product Design Agent's artifact menu from the
+   fixed 5-tab bar to an open-ended checklist, and add the Problem Framing,
+   UX Strategy, and AI Interaction Design specialists (8 total).
+3. Design Studio: real visual wireframe rendering (not text cards), the
+   editable properties panel, SVG export (realistic Figma path — paste SVG
+   into Figma, see PRD §5), responsive React prototype generation,
+   accessibility audits.
+4. Re-scope the copilot to be a Knowledge Brain lookup/reference tool
+   instead of a keyword-routed dispatcher to the pipeline subagents.
+5. Personal Knowledge Brain v1: Postgres full-text search over
+   projects/research/artifacts/conversations, resumable by vague
+   description. True vector/RAG embeddings are a later upgrade.
+6. Deploy to Vercel (owner's own account, already connected during
+   development) — link the GitHub repo, set env vars, deploy. Decide
+   whether the deployed copy and local dev share one Supabase database
+   (leaning yes, for simplicity) before doing this.
 
-## Backlog (not started)
+## Backlog (not started, lower priority than the above)
 
-- [ ] Research Lab: real citation UI / source credibility labeling (still
-      model-knowledge-based, not live-web-cited — no search API wired in).
-      The Plain/Gossip tone toggle itself is done.
-- [ ] Design Agent -> real Figma push (via Figma's REST API or a plugin),
-      instead of returning text-only wireframe spec cards.
-- [ ] Knowledge Brain: document upload, chunking, embeddings, retrieval
-      (RAG) over the owner's own notes. Explicitly deferred until there's
-      an actual document to index — don't add a vector column speculatively.
 - [ ] Ollama installation + local model, as a genuinely zero-quota fallback
       for local dev (user opted to try OpenRouter first instead).
 - [ ] Artifact version history UI (data model already supports it via
