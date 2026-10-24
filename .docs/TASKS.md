@@ -131,6 +131,46 @@ a new session should scan to know what's done and what's next.
         back-compat detectors (`normalizeStoredResearchBrief`,
         `isLegacyWireframes`) that have *already* caused real production
         crashes this session, plus `layoutIaSitemap`. `npm test` to run.
+- [x] **Six requested innovations**, all built and verified against real
+      data:
+      - **Run All button** — `getTopologicalOrder()` (DFS over
+        prerequisites, self-adjusts if specialists change) + a button that
+        runs every not-yet-done stage in a valid dependency order, stopping
+        on the first error. Tested: the sort places every stage after all
+        its prerequisites (unit test).
+      - **Welcome-back digest** — a one-line "X of 8 done, suggested next: Y"
+        banner on the project page. Deliberately **rule-based, no AI call**
+        — same practical value as the AI-generated version originally
+        pitched, at zero cost/latency.
+      - **Cross-project pattern mining** (`src/lib/patterns.ts`,
+        `/api/knowledge-brain/patterns`) — pulls personas + problem
+        statements across *every* project and finds recurring themes.
+        Requires 2+ eligible projects or returns a friendly message instead
+        of calling AI on insufficient data. Verified live against the
+        owner's real projects: correctly surfaced "Hackathon Organizer" and
+        "Developer / Rapid Prototyper" as recurring personas.
+      - **Tone modes beyond Research** — Problem Framing gets a "Brutally
+        Honest Critique" option, User Stories gets "Sarcastic Dev Standup."
+        Unlike Research's gossip mode (always a post-hoc conversion to
+        preserve factual accuracy), these are chosen upfront since there's
+        no accuracy constraint for a problem statement's delivery style.
+        Verified live: brutal-critique mode produced a genuinely blunt,
+        investor-style teardown, not a neutral statement.
+      - **Voice input** (`voice-input-button.tsx`) — browser-native
+        SpeechRecognition (Chrome/Edge), zero dependency, zero API key.
+        Feature-checked **at click time, not render time** — checking at
+        render time caused a real, confirmed hydration mismatch (button
+        present on client, absent in SSR output); checking on click avoids
+        the server/client branch entirely. Wired into the Research topic
+        box and the copilot.
+      - **Per-stage AI provider override** (`getProvider(stageId)`) —
+        `AI_PROVIDER_<STAGE_ID>` env var overrides the global `AI_PROVIDER`
+        for one specialist. Infrastructure is ready now; only becomes
+        useful once Ollama is actually installed (still backlog).
+      - Also fixed along the way: a stale `.next` build cache (Next 16's
+        Cache Components) was serving old SSR output after a structural
+        edit — cleared it; not a real bug, but worth knowing this can
+        happen after this kind of change.
 
 ## Recommended build order for the rest (per PRD.md §7)
 

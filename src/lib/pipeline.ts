@@ -153,6 +153,11 @@ export type StageId =
 export type PipelineContext = {
   project: { name: string; description: string };
   upstream: Partial<Record<StageId, unknown>>;
+  // Opt-in stylistic variants for specific stages (not every stage uses
+  // this — unlike research's gossip mode, these are chosen upfront rather
+  // than converted after the fact, since there's no "accuracy" constraint
+  // to preserve for a problem statement or a user story's delivery).
+  tone?: string;
 };
 
 export type StageDef = {
@@ -197,11 +202,18 @@ ${JSON_INSTRUCTION}`;
     schema: ProblemFramingSchema,
     buildPrompt: (ctx) => {
       const research = (ctx.upstream.research_brief as StoredResearchBrief | undefined)?.simple;
+      const toneInstruction =
+        ctx.tone === "brutal-critique"
+          ? "Write this as a brutally honest critique — like a skeptical investor tearing into a pitch. Be blunt about weak assumptions and real risks. Keep it fact-based, not mean for its own sake."
+          : "Write in a clear, constructive tone.";
+
       return `You are the Problem Framing Agent inside MindFlow AI. Turn the research below into a sharp problem statement.
 
 Project: ${ctx.project.name}
 Research summary: ${research?.summary ?? "(none)"}
 Key findings: ${research?.keyFindings?.join("; ") ?? "(none)"}
+
+${toneInstruction}
 
 Return JSON matching this shape:
 { "problemStatement": string, "assumptions": string[], "opportunityAreas": string[] }
@@ -237,12 +249,18 @@ ${JSON_INSTRUCTION}`;
       const research = (ctx.upstream.research_brief as StoredResearchBrief | undefined)?.simple;
       const personas = ctx.upstream.personas as Personas | undefined;
       const personaNames = personas?.personas?.map((p) => `${p.name} (${p.role})`).join(", ");
+      const toneInstruction =
+        ctx.tone === "sarcastic-standup"
+          ? "Write the titles and 'soThat' reasoning with dry, sarcastic dev-standup humor — like a jaded engineer complaining about the obvious. Keep asA/iWant and acceptanceCriteria clear and actually usable, just inject the sarcasm around the edges."
+          : "Write in a clear, professional tone.";
 
       return `You are the User Stories Maker inside MindFlow AI. Write user stories with acceptance criteria based on the research and personas below.
 
 Project: ${ctx.project.name}
 Research summary: ${research?.summary ?? "(none)"}
 Personas: ${personaNames || "(none)"}
+
+${toneInstruction}
 
 Return JSON matching this shape:
 { "stories": [{ "title": string, "asA": string, "iWant": string, "soThat": string, "acceptanceCriteria": string[] }] }
@@ -354,6 +372,24 @@ export function getStage(id: StageId): StageDef {
   const stage = STAGES.find((s) => s.id === id);
   if (!stage) throw new Error(`Unknown stage: ${id}`);
   return stage;
+}
+
+// A valid run order respecting every stage's prerequisites (DFS
+// post-order topological sort) — computed from STAGES itself, so it stays
+// correct automatically if specialists or their dependencies change later.
+export function getTopologicalOrder(): StageId[] {
+  const visited = new Set<StageId>();
+  const order: StageId[] = [];
+
+  function visit(id: StageId) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    for (const dep of getStage(id).prerequisites) visit(dep);
+    order.push(id);
+  }
+
+  for (const stage of STAGES) visit(stage.id);
+  return order;
 }
 
 // Converts an already-generated research brief into Gen-Z gossip style.

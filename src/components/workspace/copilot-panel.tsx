@@ -6,6 +6,7 @@ import { flushSync } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import { toFriendlyMessage } from "@/lib/friendly-error";
 import { Button } from "@/components/ui/button";
+import { VoiceInputButton } from "@/components/workspace/voice-input-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -242,9 +243,14 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
           rows={3}
         />
 
-        <Button size="sm" onClick={() => void send()} disabled={pending}>
-          {pending ? "Receiving..." : "Send"}
-        </Button>
+        <div className="flex gap-2">
+          <VoiceInputButton
+            onResult={(text) => setDraft((prev) => (prev ? `${prev} ${text}` : text))}
+          />
+          <Button size="sm" className="flex-1" onClick={() => void send()} disabled={pending}>
+            {pending ? "Receiving..." : "Send"}
+          </Button>
+        </div>
       </div>
     </aside>
   );

@@ -1,5 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { isLegacyWireframes, normalizeStoredResearchBrief } from "./pipeline";
+import {
+  getTopologicalOrder,
+  isLegacyWireframes,
+  normalizeStoredResearchBrief,
+  STAGES,
+  type StageId,
+} from "./pipeline";
+
+describe("getTopologicalOrder", () => {
+  it("places every stage after all of its prerequisites", () => {
+    const order = getTopologicalOrder();
+    const indexOf = new Map(order.map((id, i) => [id, i]));
+
+    for (const stage of STAGES) {
+      for (const dep of stage.prerequisites) {
+        expect(indexOf.get(dep)!).toBeLessThan(indexOf.get(stage.id)!);
+      }
+    }
+  });
+
+  it("includes every stage exactly once", () => {
+    const order = getTopologicalOrder();
+    expect(new Set(order).size).toBe(STAGES.length);
+    expect(order).toHaveLength(STAGES.length);
+  });
+
+  it("puts research_brief first (nothing else has zero prerequisites)", () => {
+    const order = getTopologicalOrder();
+    expect(order[0]).toBe("research_brief" satisfies StageId);
+  });
+});
 
 describe("normalizeStoredResearchBrief", () => {
   it("wraps a legacy flat ResearchBrief (pre-{simple,gossip} shape) in .simple", () => {

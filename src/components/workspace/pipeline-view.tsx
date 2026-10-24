@@ -27,7 +27,23 @@ import { WireframeCanvas } from "@/components/workspace/wireframe-canvas";
 import { toFriendlyMessage } from "@/lib/friendly-error";
 import { layoutIaSitemap } from "@/lib/ia-layout";
 import type { FlowData } from "@/lib/flow-artifact";
-import { STAGES, type StageId, type StoredResearchBrief } from "@/lib/pipeline";
+import {
+  getTopologicalOrder,
+  STAGES,
+  type StageId,
+  type StoredResearchBrief,
+} from "@/lib/pipeline";
+
+const TONE_OPTIONS: Partial<Record<StageId, { value: string; label: string }[]>> = {
+  problem_framing: [
+    { value: "neutral", label: "Neutral" },
+    { value: "brutal-critique", label: "Brutally Honest Critique" },
+  ],
+  user_stories: [
+    { value: "neutral", label: "Neutral" },
+    { value: "sarcastic-standup", label: "Sarcastic Dev Standup" },
+  ],
+};
 
 const STAGE_ICONS: Record<StageId, React.ComponentType<{ className?: string }>> = {
   research_brief: Search,
@@ -55,8 +71,10 @@ export function PipelineView({
   const [errors, setErrors] = useState<Partial<Record<StageId, string>>>({});
   const [researchMode, setResearchMode] = useState<"simple" | "gossip">("simple");
   const [convertingGossip, setConvertingGossip] = useState(false);
+  const [toneByStage, setToneByStage] = useState<Partial<Record<StageId, string>>>({});
+  const [runningAll, setRunningAll] = useState(false);
 
-  async function runStage(stageId: StageId) {
+  async function runStage(stageId: StageId): Promise<boolean> {
     setRunningStage(stageId);
     setErrors((prev) => ({ ...prev, [stageId]: undefined }));
 
@@ -64,7 +82,7 @@ export function PipelineView({
       const res = await fetch("/api/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, stageId }),
+        body: JSON.stringify({ projectId, stageId, tone: toneByStage[stageId] }),
       });
       const body = await res.json();
 
@@ -76,13 +94,29 @@ export function PipelineView({
 
       setArtifacts((prev) => ({ ...prev, [stageId]: body.data }));
       if (stageId === "research_brief") setResearchMode("simple");
+      return true;
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
         [stageId]: toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"),
       }));
+      return false;
     } finally {
       setRunningStage(null);
+    }
+  }
+
+  async function runAll() {
+    setRunningAll(true);
+    try {
+      for (const stageId of getTopologicalOrder()) {
+        if (artifacts[stageId] !== undefined) continue;
+        setActiveStage(stageId);
+        const ok = await runStage(stageId);
+        if (!ok) break;
+      }
+    } finally {
+      setRunningAll(false);
     }
   }
 
@@ -121,12 +155,26 @@ export function PipelineView({
   const activeMissing = activeDef?.prerequisites.filter((p) => artifacts[p] === undefined) ?? [];
   const isRunning = activeStage !== null && runningStage === activeStage;
 
+  const doneCount = STAGES.filter((s) => artifacts[s.id] !== undefined).length;
+  const nextStageId = getTopologicalOrder().find((id) => artifacts[id] === undefined);
+  const nextStage = nextStageId ? STAGES.find((s) => s.id === nextStageId) : undefined;
+
   return (
     <div className="flex h-full flex-col overflow-y-auto px-4 py-4">
-      <p className="mb-3 text-sm text-muted-foreground">
-        Pick a specialist to run. More context from other specialists makes each one better,
-        but nothing is forced into a fixed order.
-      </p>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {doneCount === STAGES.length
+            ? "All specialists have run for this project."
+            : doneCount === 0
+              ? "Pick a specialist to run, or run them all in a sensible order."
+              : `${doneCount} of ${STAGES.length} specialists done. Suggested next: ${nextStage?.title}.`}
+        </p>
+        {doneCount < STAGES.length && (
+          <Button size="sm" onClick={runAll} disabled={runningAll || runningStage !== null}>
+            {runningAll ? "Running all…" : "Run All"}
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {STAGES.map((stage) => {
@@ -178,8 +226,29 @@ export function PipelineView({
                     : `Generate this project's ${activeDef.title.toLowerCase()}.`}
                 </CardDescription>
               </CardHeader>
-              <div className="px-4 pb-4">
+              <div className="flex flex-col gap-3 px-4 pb-4">
+                {TONE_OPTIONS[activeDef.id] && (
+                  <div className="flex items-center gap-2">
+                    {TONE_OPTIONS[activeDef.id]!.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        size="sm"
+                        variant={
+                          (toneByStage[activeDef.id] ?? "neutral") === opt.value
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() =>
+                          setToneByStage((prev) => ({ ...prev, [activeDef.id]: opt.value }))
+                        }
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <Button
+                  className="w-fit"
                   onClick={() => runStage(activeDef.id)}
                   disabled={activeMissing.length > 0 || isRunning}
                 >

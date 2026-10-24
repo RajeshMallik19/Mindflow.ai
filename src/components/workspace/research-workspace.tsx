@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ResearchView } from "@/components/workspace/stage-views";
+import { VoiceInputButton } from "@/components/workspace/voice-input-button";
 import { toFriendlyMessage } from "@/lib/friendly-error";
 import type { ResearchBrief, StoredResearchBrief } from "@/lib/pipeline";
 
@@ -104,6 +105,7 @@ export function ResearchWorkspace() {
           rows={2}
           className="flex-1"
         />
+        <VoiceInputButton onResult={(text) => setTopic((prev) => (prev ? `${prev} ${text}` : text))} />
         <Button onClick={runResearch} disabled={running || !topic.trim()}>
           {running ? "Researching…" : "Run Research"}
         </Button>

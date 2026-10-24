@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, FolderOpen, MessageSquare } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, FolderOpen, MessageSquare, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { toFriendlyMessage } from "@/lib/friendly-error";
 import type { SearchHit } from "@/lib/knowledge-brain";
+import type { Patterns } from "@/lib/patterns";
 
 const KIND_ICON = {
   project: FolderOpen,
@@ -25,6 +28,10 @@ export function KnowledgeBrainSearch() {
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
+  const [patterns, setPatterns] = useState<Patterns | null>(null);
+  const [findingPatterns, setFindingPatterns] = useState(false);
+  const [patternsError, setPatternsError] = useState<string | null>(null);
+
   async function runSearch() {
     const q = query.trim();
     if (!q) return;
@@ -37,6 +44,23 @@ export function KnowledgeBrainSearch() {
       setSearched(true);
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function findPatterns() {
+    setFindingPatterns(true);
+    setPatternsError(null);
+    try {
+      const res = await fetch("/api/knowledge-brain/patterns", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(typeof body?.error === "string" ? body.error : "Pattern analysis failed");
+      }
+      setPatterns(body.data);
+    } catch (err) {
+      setPatternsError(toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"));
+    } finally {
+      setFindingPatterns(false);
     }
   }
 
@@ -87,6 +111,67 @@ export function KnowledgeBrainSearch() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-4 border-t pt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            Patterns across your projects
+          </h2>
+          <Button size="sm" variant="outline" onClick={findPatterns} disabled={findingPatterns}>
+            <Sparkles className="size-3.5" />
+            {findingPatterns ? "Analyzing…" : "Find patterns"}
+          </Button>
+        </div>
+
+        {patternsError && <p className="text-sm text-destructive">{patternsError}</p>}
+
+        {patterns && (
+          <div className="flex flex-col gap-3">
+            {patterns.recurringPersonas.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Recurring personas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-1 pl-4 text-sm">
+                    {patterns.recurringPersonas.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+            {patterns.recurringProblems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Recurring problems</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-1 pl-4 text-sm">
+                    {patterns.recurringProblems.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+            {patterns.suggestedTemplates.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Suggested templates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+                    {patterns.suggestedTemplates.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

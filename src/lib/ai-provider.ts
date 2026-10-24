@@ -267,9 +267,17 @@ class OllamaProvider implements AIProvider {
   }
 }
 
-export function getProvider(): AIProvider {
+// stageId lets a specific pipeline stage override the provider via
+// AI_PROVIDER_<STAGE_ID> (e.g. AI_PROVIDER_PROBLEM_FRAMING=ollama) — falls
+// back to the global AI_PROVIDER when unset. Lets you route cheap/short
+// stages to a free local model once Ollama is installed, while keeping
+// quality-sensitive stages (research, wireframes) on a stronger provider.
+export function getProvider(stageId?: string): AIProvider {
+  const stageOverrideKey = stageId ? `AI_PROVIDER_${stageId.toUpperCase()}` : undefined;
+  const stageOverride = stageOverrideKey ? process.env[stageOverrideKey]?.trim() : undefined;
+
   const selectedProvider = (
-    process.env.AI_PROVIDER || "gemini"
+    stageOverride || process.env.AI_PROVIDER || "gemini"
   ).trim().toLowerCase();
 
   switch (selectedProvider) {

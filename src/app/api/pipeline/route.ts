@@ -21,6 +21,7 @@ const STAGE_IDS: [StageId, ...StageId[]] = [
 const RequestSchema = z.object({
   projectId: z.string(),
   stageId: z.enum(STAGE_IDS),
+  tone: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, stageId } = parsed.data;
+  const { projectId, stageId, tone } = parsed.data;
 
   const rateLimit = await checkAndIncrementRateLimit("ai_calls");
   if (!rateLimit.ok) {
@@ -75,11 +76,12 @@ export async function POST(req: Request) {
   const prompt = stage.buildPrompt({
     project: { name: project.name, description: project.description },
     upstream,
+    tone,
   });
 
   let result;
   try {
-    result = await generateStructured(getProvider(), prompt, stage.schema);
+    result = await generateStructured(getProvider(stageId), prompt, stage.schema);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Stage generation failed" },
