@@ -17,6 +17,15 @@ export function toFriendlyMessage(raw: string): string {
   }
 
   if (
+    lower.includes("503") ||
+    lower.includes("overloaded") ||
+    lower.includes("high demand") ||
+    lower.includes("service unavailable")
+  ) {
+    return "The AI provider is temporarily overloaded (not a quota issue) — this usually clears up within a minute or two. Try again shortly.";
+  }
+
+  if (
     lower.includes("econnrefused") ||
     lower.includes("fetch failed") ||
     lower.includes("network")
