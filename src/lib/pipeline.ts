@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const PLATFORM_OPTIONS = ["web", "mobile", "both"] as const;
+export type Platform = (typeof PLATFORM_OPTIONS)[number];
+
 export const ResearchBriefSchema = z.object({
   summary: z.string(),
   keyFindings: z.array(z.string()),
@@ -180,6 +183,10 @@ export type PipelineContext = {
   // than converted after the fact, since there's no "accuracy" constraint
   // to preserve for a problem statement or a user story's delivery).
   tone?: string;
+  // Only consumed by the wireframes stage: which device(s) to generate
+  // screens for. Falls back to the project's stored platform if not passed
+  // explicitly for a given run.
+  platform?: Platform;
 };
 
 export type StageDef = {
@@ -397,6 +404,14 @@ ${JSON_INSTRUCTION}`;
       const nodeLabels = ia?.nodes?.map((n) => n.label).join(", ");
       const strategy = ctx.upstream.ux_strategy as UxStrategy | undefined;
       const aiDesign = ctx.upstream.ai_interaction_design as AiInteractionDesign | undefined;
+      const platform = ctx.platform ?? "both";
+
+      const platformInstruction =
+        platform === "web"
+          ? 'This product is web-only. Every screen must use "device": "desktop".'
+          : platform === "mobile"
+            ? 'This product is mobile-only. Every screen must use "device": "mobile".'
+            : 'This product targets both web and mobile. For each major screen from the sitemap, produce TWO versions: one with "device": "desktop" and one with "device": "mobile" — same purpose and content, laid out appropriately for each device (e.g. a desktop nav might be a horizontal bar, the mobile version a stacked menu).';
 
       return `You are the Design Agent inside MindFlow AI. Produce an actual visual wireframe layout (not a text description) for each major screen below.
 
@@ -405,10 +420,12 @@ Sitemap screens: ${nodeLabels || "(none)"}
 ${strategy ? `UX strategy recommendations: ${strategy.recommendations.join("; ")}\nInteraction principles: ${strategy.interactionPrinciples.join("; ")}\n` : ""}${aiDesign ? `AI interaction fallbacks to account for: ${aiDesign.fallbacks.join("; ")}\n` : ""}
 Each screen is a top-to-bottom stack of sections. Each section is a row or column of elements. Each element has a type (one of: ${WIREFRAME_ELEMENT_TYPES.join(", ")}) and a short label describing what it actually shows (e.g. a "text" element's label might be "Product title and price", not just "text").
 
+${platformInstruction}
+
 Return JSON matching this shape:
 { "screens": [{ "name": string, "device": "mobile" | "desktop", "sections": [{ "id": string, "direction": "row" | "column", "elements": [{ "id": string, "type": string, "label": string }] }] }] }
 
-Guidelines: 3-6 sections per screen, 1-5 elements per section, short unique ids (e.g. "s1", "el1"). Pick "mobile" or "desktop" based on what's actually appropriate for that screen.
+Guidelines: 3-6 sections per screen, 1-5 elements per section, short unique ids (e.g. "s1", "el1").
 
 ${JSON_INSTRUCTION}`;
     },

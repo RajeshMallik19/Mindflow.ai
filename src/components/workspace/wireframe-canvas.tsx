@@ -1,17 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  CreditCard,
-  Download,
-  Image as ImageIcon,
-  Menu,
-  MousePointerClick,
-  PanelBottom,
-  PanelTop,
-  TextCursorInput,
-  Type as TypeIcon,
-} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,28 +12,7 @@ import {
   type WireframeScreen,
   type Wireframes,
 } from "@/lib/pipeline";
-
-const ELEMENT_ICON: Record<WireframeElement["type"], React.ComponentType<{ className?: string }>> = {
-  header: PanelTop,
-  nav: Menu,
-  text: TypeIcon,
-  button: MousePointerClick,
-  image: ImageIcon,
-  input: TextCursorInput,
-  card: CreditCard,
-  footer: PanelBottom,
-};
-
-const ELEMENT_CLASS: Record<WireframeElement["type"], string> = {
-  header: "w-full h-14 bg-muted font-semibold",
-  nav: "w-full h-10 bg-muted/60 text-xs",
-  text: "flex-1 min-h-16 bg-card border text-sm",
-  button: "w-28 h-10 bg-primary text-primary-foreground text-xs justify-center",
-  image: "flex-1 h-32 bg-muted text-xs flex-col",
-  input: "flex-1 h-10 border text-xs text-muted-foreground",
-  card: "flex-1 min-h-24 bg-card border text-sm",
-  footer: "w-full h-12 bg-muted/60 text-xs",
-};
+import { WIREFRAME_ELEMENT_CLASS, WIREFRAME_ELEMENT_ICON } from "@/lib/wireframe-style";
 
 function escapeXml(s: string) {
   return s.replace(/[&<>"']/g, (c) =>
@@ -62,17 +31,52 @@ function ElementBox({
   onSelect: () => void;
   registerRef: (id: string, node: HTMLDivElement | null) => void;
 }) {
-  const Icon = ELEMENT_ICON[el.type];
+  const Icon = WIREFRAME_ELEMENT_ICON[el.type];
   return (
     <div
       ref={(node) => registerRef(el.id, node)}
       onClick={onSelect}
-      className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2 ${ELEMENT_CLASS[el.type]} ${
-        selected ? "ring-2 ring-primary" : ""
+      className={`flex cursor-pointer items-center gap-1.5 px-2 ${
+        el.type === "image" ? "flex-col justify-center gap-1" : ""
+      } ${WIREFRAME_ELEMENT_CLASS[el.type]} ${
+        selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
       }`}
     >
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <Icon className={el.type === "image" ? "size-5 opacity-60" : "size-3.5 shrink-0 opacity-70"} />
       <span className="truncate">{el.label}</span>
+    </div>
+  );
+}
+
+// Decorative device chrome — purely visual, rendered outside containerRef so
+// it never affects SVG/PNG export measurement (that only walks registered
+// element refs inside the measured container).
+export function DeviceFrame({
+  device,
+  children,
+}: {
+  device: WireframeScreen["device"];
+  children: React.ReactNode;
+}) {
+  if (device === "mobile") {
+    return (
+      <div className="inline-flex flex-col items-center gap-0 rounded-[2rem] bg-zinc-900 p-2.5 shadow-xl dark:bg-zinc-800">
+        <div className="mb-1.5 h-1.5 w-16 rounded-full bg-zinc-700" />
+        <div className="overflow-hidden rounded-[1.4rem]">{children}</div>
+        <div className="mt-1.5 h-1 w-20 rounded-full bg-zinc-700" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="inline-flex flex-col gap-0 overflow-hidden rounded-xl shadow-xl ring-1 ring-foreground/10">
+      <div className="flex items-center gap-1.5 bg-zinc-200 px-3 py-2 dark:bg-zinc-800">
+        <span className="size-2.5 rounded-full bg-red-400" />
+        <span className="size-2.5 rounded-full bg-amber-400" />
+        <span className="size-2.5 rounded-full bg-emerald-400" />
+        <div className="ml-2 h-5 flex-1 rounded-full bg-white/70 dark:bg-zinc-900/60" />
+      </div>
+      {children}
     </div>
   );
 }
@@ -90,34 +94,34 @@ function ScreenCanvas({
   registerRef: (id: string, node: HTMLDivElement | null) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const width = screen.device === "mobile" ? 360 : 820;
+  const width = screen.device === "mobile" ? 320 : 800;
 
   return (
-    <div className="overflow-x-auto">
-      <div
-        ref={containerRef}
-        style={{ width }}
-        className="flex flex-col rounded-lg border bg-background shadow-sm"
-      >
-        {screen.sections.map((section) => (
-          <div
-            key={section.id}
-            className={`flex gap-2 border-b p-3 last:border-b-0 ${
-              section.direction === "row" ? "flex-row" : "flex-col"
-            }`}
-          >
-            {section.elements.map((el) => (
-              <ElementBox
-                key={el.id}
-                el={el}
-                selected={selectedId === el.id}
-                onSelect={() => onSelect(el.id)}
-                registerRef={registerRef}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
+    <div className="overflow-x-auto p-1">
+      <DeviceFrame device={screen.device}>
+        <div
+          ref={containerRef}
+          style={{ width }}
+          className="flex flex-col gap-2 bg-background p-3"
+        >
+          {screen.sections.map((section) => (
+            <div
+              key={section.id}
+              className={`flex gap-2 ${section.direction === "row" ? "flex-row" : "flex-col"}`}
+            >
+              {section.elements.map((el) => (
+                <ElementBox
+                  key={el.id}
+                  el={el}
+                  selected={selectedId === el.id}
+                  onSelect={() => onSelect(el.id)}
+                  registerRef={registerRef}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </DeviceFrame>
     </div>
   );
 }
@@ -135,6 +139,27 @@ export function WireframeCanvas({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [deviceFilter, setDeviceFilter] = useState<"all" | "mobile" | "desktop">("all");
+
+  const hasBothDevices = useMemo(() => new Set(screens.map((s) => s.device)).size > 1, [screens]);
+  const visibleIndices = useMemo(
+    () =>
+      screens
+        .map((_, i) => i)
+        .filter((i) => deviceFilter === "all" || screens[i].device === deviceFilter),
+    [screens, deviceFilter],
+  );
+
+  function selectDeviceFilter(next: "all" | "mobile" | "desktop") {
+    setDeviceFilter(next);
+    const indices = screens
+      .map((_, i) => i)
+      .filter((i) => next === "all" || screens[i].device === next);
+    if (indices.length > 0 && !indices.includes(activeScreenIdx)) {
+      setActiveScreenIdx(indices[0]);
+      setSelectedId(null);
+    }
+  }
 
   const containerRef = useRef<HTMLDivElement>(null);
   const elementRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -266,10 +291,25 @@ export function WireframeCanvas({
 
   return (
     <div className="flex flex-col gap-3">
+      {hasBothDevices && (
+        <div className="flex items-center gap-1 text-xs">
+          <span className="mr-1 text-muted-foreground">Show:</span>
+          {(["all", "desktop", "mobile"] as const).map((f) => (
+            <Button
+              key={f}
+              size="xs"
+              variant={deviceFilter === f ? "default" : "outline"}
+              onClick={() => selectDeviceFilter(f)}
+            >
+              {f === "all" ? "All" : f === "desktop" ? "Web" : "Mobile"}
+            </Button>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
-        {screens.map((s, i) => (
+        {visibleIndices.map((i) => (
           <Button
-            key={s.name + i}
+            key={screens[i].name + i}
             size="sm"
             variant={i === activeScreenIdx ? "default" : "outline"}
             onClick={() => {
@@ -277,7 +317,7 @@ export function WireframeCanvas({
               setSelectedId(null);
             }}
           >
-            {s.name}
+            {screens[i].name}
           </Button>
         ))}
         <div className="flex-1" />

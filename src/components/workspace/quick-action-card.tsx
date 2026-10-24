@@ -9,11 +9,15 @@ export function QuickActionCard({
   description,
   defaultName,
   defaultDescription,
+  icon,
+  chipClassName,
 }: {
   title: string;
   description: string;
   defaultName: string;
   defaultDescription: string;
+  icon: React.ReactNode;
+  chipClassName: string;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -27,9 +31,12 @@ export function QuickActionCard({
           void createProjectAndRedirect(defaultName, defaultDescription);
         });
       }}
-      className="cursor-pointer transition-colors hover:bg-accent"
+      className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
       <CardHeader>
+        <span className={`mb-1 flex size-8 items-center justify-center rounded-md ${chipClassName}`}>
+          {icon}
+        </span>
         <CardTitle className="text-sm">{title}</CardTitle>
         <CardDescription>{pending ? "Creating…" : description}</CardDescription>
       </CardHeader>

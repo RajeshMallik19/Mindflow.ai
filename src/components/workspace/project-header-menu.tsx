@@ -13,20 +13,30 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PLATFORM_OPTIONS, type Platform } from "@/lib/pipeline";
+
+const PLATFORM_LABEL: Record<Platform, string> = {
+  web: "Web",
+  mobile: "Mobile",
+  both: "Both",
+};
 
 export function ProjectHeaderMenu({
   projectId,
   name,
   description,
+  platform,
 }: {
   projectId: string;
   name: string;
   description: string;
+  platform: Platform;
 }) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftDescription, setDraftDescription] = useState(description);
+  const [draftPlatform, setDraftPlatform] = useState<Platform>(platform);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -44,7 +54,7 @@ export function ProjectHeaderMenu({
             onSubmit={(e) => {
               e.preventDefault();
               startTransition(async () => {
-                await renameProject(projectId, draftName, draftDescription);
+                await renameProject(projectId, draftName, draftDescription, draftPlatform);
                 setRenameOpen(false);
               });
             }}
@@ -65,6 +75,24 @@ export function ProjectHeaderMenu({
                 placeholder="Description"
                 rows={3}
               />
+              <div>
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Platform
+                </label>
+                <div className="mt-1.5 flex items-center gap-2">
+                  {PLATFORM_OPTIONS.map((p) => (
+                    <Button
+                      key={p}
+                      type="button"
+                      size="sm"
+                      variant={draftPlatform === p ? "default" : "outline"}
+                      onClick={() => setDraftPlatform(p)}
+                    >
+                      {PLATFORM_LABEL[p]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button type="submit" disabled={pending}>

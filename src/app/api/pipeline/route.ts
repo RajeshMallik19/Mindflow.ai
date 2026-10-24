@@ -4,7 +4,7 @@ import { getProvider } from "@/lib/ai-provider";
 import { upsertArtifact } from "@/lib/artifacts";
 import { db } from "@/lib/db";
 import { generateStructured } from "@/lib/json-output";
-import { getStage, type StageId } from "@/lib/pipeline";
+import { getStage, PLATFORM_OPTIONS, type StageId } from "@/lib/pipeline";
 import { checkAndIncrementRateLimit } from "@/lib/rate-limit";
 
 const STAGE_IDS: [StageId, ...StageId[]] = [
@@ -23,6 +23,7 @@ const RequestSchema = z.object({
   projectId: z.string(),
   stageId: z.enum(STAGE_IDS),
   tone: z.string().optional(),
+  platform: z.enum(PLATFORM_OPTIONS).optional(),
 });
 
 export async function POST(req: Request) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, stageId, tone } = parsed.data;
+  const { projectId, stageId, tone, platform } = parsed.data;
 
   const rateLimit = await checkAndIncrementRateLimit("ai_calls");
   if (!rateLimit.ok) {
@@ -74,10 +75,13 @@ export async function POST(req: Request) {
     }
   }
 
+  const projectPlatform = PLATFORM_OPTIONS.find((p) => p === project.platform) ?? "both";
+
   const prompt = stage.buildPrompt({
     project: { name: project.name, description: project.description },
     upstream,
     tone,
+    platform: platform ?? projectPlatform,
   });
 
   let result;

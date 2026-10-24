@@ -33,10 +33,18 @@ import { layoutUserFlow } from "@/lib/user-flow-layout";
 import type { FlowData } from "@/lib/flow-artifact";
 import {
   getTopologicalOrder,
+  PLATFORM_OPTIONS,
   STAGES,
+  type Platform,
   type StageId,
   type StoredResearchBrief,
 } from "@/lib/pipeline";
+
+const PLATFORM_LABEL: Record<Platform, string> = {
+  web: "Web",
+  mobile: "Mobile",
+  both: "Both",
+};
 
 const TONE_OPTIONS: Partial<Record<StageId, { value: string; label: string }[]>> = {
   problem_framing: [
@@ -61,16 +69,32 @@ const STAGE_ICONS: Record<StageId, React.ComponentType<{ className?: string }>> 
   wireframes: LayoutTemplate,
 };
 
+// A distinct accent per specialist so the grid reads as a colorful team
+// roster rather than a wall of identical gray icons.
+const STAGE_ACCENT: Record<StageId, { icon: string; chip: string }> = {
+  research_brief: { icon: "text-sky-600 dark:text-sky-400", chip: "bg-sky-500/10" },
+  problem_framing: { icon: "text-rose-600 dark:text-rose-400", chip: "bg-rose-500/10" },
+  personas: { icon: "text-violet-600 dark:text-violet-400", chip: "bg-violet-500/10" },
+  user_stories: { icon: "text-amber-600 dark:text-amber-400", chip: "bg-amber-500/10" },
+  ia_sitemap: { icon: "text-emerald-600 dark:text-emerald-400", chip: "bg-emerald-500/10" },
+  user_flow: { icon: "text-cyan-600 dark:text-cyan-400", chip: "bg-cyan-500/10" },
+  ux_strategy: { icon: "text-fuchsia-600 dark:text-fuchsia-400", chip: "bg-fuchsia-500/10" },
+  ai_interaction_design: { icon: "text-indigo-600 dark:text-indigo-400", chip: "bg-indigo-500/10" },
+  wireframes: { icon: "text-orange-600 dark:text-orange-400", chip: "bg-orange-500/10" },
+};
+
 export function PipelineView({
   projectId,
   initialArtifacts,
   initialIaDiagram,
   initialUserFlowDiagram,
+  projectPlatform,
 }: {
   projectId: string;
   initialArtifacts: Partial<Record<StageId, unknown>>;
   initialIaDiagram?: FlowData;
   initialUserFlowDiagram?: FlowData;
+  projectPlatform: Platform;
 }) {
   const [artifacts, setArtifacts] = useState(initialArtifacts);
   const [activeStage, setActiveStage] = useState<StageId | null>(null);
@@ -80,6 +104,7 @@ export function PipelineView({
   const [convertingGossip, setConvertingGossip] = useState(false);
   const [toneByStage, setToneByStage] = useState<Partial<Record<StageId, string>>>({});
   const [runningAll, setRunningAll] = useState(false);
+  const [wireframePlatform, setWireframePlatform] = useState<Platform>(projectPlatform);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -107,7 +132,12 @@ export function PipelineView({
       const res = await fetch("/api/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, stageId, tone: toneByStage[stageId] }),
+        body: JSON.stringify({
+          projectId,
+          stageId,
+          tone: toneByStage[stageId],
+          platform: stageId === "wireframes" ? wireframePlatform : undefined,
+        }),
       });
       const body = await res.json();
 
@@ -204,6 +234,7 @@ export function PipelineView({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {STAGES.map((stage) => {
           const Icon = STAGE_ICONS[stage.id];
+          const accent = STAGE_ACCENT[stage.id];
           const done = artifacts[stage.id] !== undefined;
           const missing = stage.prerequisites.filter((p) => artifacts[p] === undefined);
           const isActive = activeStage === stage.id;
@@ -212,12 +243,14 @@ export function PipelineView({
             <button
               key={stage.id}
               onClick={() => setActiveStage(isActive ? null : stage.id)}
-              className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent ${
+              className={`flex flex-col items-start gap-2 rounded-lg border p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
                 isActive ? "border-primary bg-accent" : "border-border"
               }`}
             >
               <div className="flex w-full items-center justify-between">
-                <Icon className="size-4 text-muted-foreground" />
+                <span className={`flex size-8 items-center justify-center rounded-md ${accent.chip}`}>
+                  <Icon className={`size-4 ${accent.icon}`} />
+                </span>
                 {done && <CheckCircle2 className="size-4 text-primary" />}
               </div>
               <span className="text-sm font-medium">{stage.title}</span>
@@ -272,6 +305,21 @@ export function PipelineView({
                     ))}
                   </div>
                 )}
+                {activeDef.id === "wireframes" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Platform:</span>
+                    {PLATFORM_OPTIONS.map((p) => (
+                      <Button
+                        key={p}
+                        size="sm"
+                        variant={wireframePlatform === p ? "default" : "outline"}
+                        onClick={() => setWireframePlatform(p)}
+                      >
+                        {PLATFORM_LABEL[p]}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <Button
                   className="w-fit"
                   onClick={() => runStage(activeDef.id)}
@@ -311,6 +359,20 @@ export function PipelineView({
                         {convertingGossip ? "Converting…" : "Convert to Gossip mode"}
                       </Button>
                     )}
+                  </div>
+                ) : activeDef.id === "wireframes" ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Platform:</span>
+                    {PLATFORM_OPTIONS.map((p) => (
+                      <Button
+                        key={p}
+                        size="sm"
+                        variant={wireframePlatform === p ? "default" : "outline"}
+                        onClick={() => setWireframePlatform(p)}
+                      >
+                        {PLATFORM_LABEL[p]}
+                      </Button>
+                    ))}
                   </div>
                 ) : (
                   <div />

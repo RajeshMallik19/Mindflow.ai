@@ -10,7 +10,7 @@ import { ProjectHeaderMenu } from "@/components/workspace/project-header-menu";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { parseFlowArtifact } from "@/lib/flow-artifact";
 import { db } from "@/lib/db";
-import { normalizeStoredResearchBrief, STAGES, type StageId } from "@/lib/pipeline";
+import { normalizeStoredResearchBrief, PLATFORM_OPTIONS, STAGES, type StageId } from "@/lib/pipeline";
 import type { Project } from "@/lib/types";
 
 function ProjectSidebarFallback() {
@@ -119,6 +119,7 @@ async function ProjectContent({ id }: { id: string }) {
             projectId={project.id}
             name={project.name}
             description={project.description}
+            platform={PLATFORM_OPTIONS.find((p) => p === project.platform) ?? "both"}
           />
         </div>
       </div>
@@ -129,6 +130,7 @@ async function ProjectContent({ id }: { id: string }) {
           initialArtifacts={initialArtifacts}
           initialIaDiagram={initialIaDiagram}
           initialUserFlowDiagram={initialUserFlowDiagram}
+          projectPlatform={PLATFORM_OPTIONS.find((p) => p === project.platform) ?? "both"}
         />
       </div>
     </main>

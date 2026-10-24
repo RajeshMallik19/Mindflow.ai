@@ -208,6 +208,57 @@ a new session should scan to know what's done and what's next.
         where possible) with a "Print / Save as PDF" button. Distinct from
         `/api/export`, which is a raw-JSON backup dump, not something meant
         for reading.
+- [x] **Platform targeting + high-fidelity wireframes + app-wide visual
+      refresh**, all built and verified against real data:
+      - **`Project.platform` field** (`web | mobile | both`, default
+        `both`) — additive column with a default, zero legacy-data risk
+        (confirmed: existing projects got the default cleanly). Set at
+        project creation (`new-project-dialog.tsx`), editable later
+        (`project-header-menu.tsx`), and overridable per-run at the
+        Wireframes stage itself (both places, per explicit instruction).
+      - **Wireframes stage honors platform** — `web`/`mobile` generate only
+        that device; `both` instructs the model to produce a desktop AND
+        mobile variant of every screen. Verified live against Hackloop.ai
+        with `platform: "both"`: 13 screens came back as 26, each with a
+        matching desktop + mobile pair.
+      - **Web/Mobile filter** in `wireframe-canvas.tsx` (segmented
+        All/Web/Mobile control, only shown when a project actually has more
+        than one device type) and the report page (screens grouped under
+        "Web"/"Mobile" subheadings when both are present).
+      - **High-fidelity wireframe rendering** — extracted
+        `src/lib/wireframe-style.ts` as the single source of truth for
+        element icon/style, shared by the editable canvas and the
+        read-only report so they can't visually drift apart. Elements now
+        render as a styled mock-up (gradient header/button, pill nav,
+        shadowed cards, gradient image placeholders, dark footer bar)
+        instead of flat gray boxes. Added `DeviceFrame` (exported from
+        `wireframe-canvas.tsx`, reused by the report page): a browser-chrome
+        frame (traffic-light dots + address bar) for desktop screens, a
+        rounded phone frame for mobile. Deliberately still a styled
+        auto-generated mock-up, not a drag/resize canvas — building a
+        Figma-grade editor was already ruled out for this project (see
+        PRD.md §4). SVG/PNG export needed no changes: it measures real DOM
+        rects inside the unchanged `containerRef`, so the chrome (rendered
+        outside that ref) doesn't affect exports.
+      - **App-wide visual refresh** — richer, more saturated primary/accent
+        OKLCH values in `globals.css` (was a near-grayscale palette), a new
+        `--accent-warm` token, and real per-specialist colors (`chart-1..5`
+        repurposed) instead of one indigo uniformly everywhere. The 9
+        specialist cards in the pipeline grid and the home page's quick
+        actions each got a distinct colored icon chip; added a small
+        gradient brand mark to the sidebar header; cards get a hover
+        lift+shadow instead of a flat color change.
+      - **Real bug caught and fixed via live testing, not assumption**:
+        passing lucide icon *components* as props from a Server Component
+        (`page.tsx`) into a Client Component (`quick-action-card.tsx`)
+        broke the home page with "Functions cannot be passed directly to
+        Client Components" — confirmed via the actual dev server error.
+        Fixed by passing pre-rendered `<Icon .../>` elements instead of
+        bare component references, which Next.js RSC serialization does
+        support.
+      - Also hit the same known stale-Turbopack-cache issue from earlier
+        this session (new exports not picked up by HMR) — cleared `.next`
+        again, same fix as before.
 
 ## Recommended build order for the rest (per PRD.md §7)
 

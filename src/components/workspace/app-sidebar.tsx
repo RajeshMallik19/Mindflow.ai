@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { CommandPalette } from "@/components/workspace/command-palette";
@@ -14,7 +14,12 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
       <CommandPalette projects={projects} />
 
       <div className="flex items-center justify-between px-4 py-4">
-        <span className="text-sm font-semibold tracking-tight">MindFlow AI</span>
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent-warm shadow-sm">
+            <Sparkles className="size-3.5 text-primary-foreground" />
+          </span>
+          <span className="text-sm font-semibold tracking-tight">MindFlow AI</span>
+        </div>
         <ThemeToggle />
       </div>
       <Separator />

@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
+import { Compass, LayoutTemplate, Search } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -21,12 +22,16 @@ const QUICK_ACTIONS = [
     description: "Turn an idea into personas, user stories, and an IA.",
     defaultName: "Untitled product",
     defaultDescription: "",
+    icon: <Compass className="size-4 text-violet-600 dark:text-violet-400" />,
+    chipClassName: "bg-violet-500/10",
   },
   {
     title: "New Design project",
     description: "Generate wireframes from an existing IA and personas.",
     defaultName: "Untitled design",
     defaultDescription: "",
+    icon: <LayoutTemplate className="size-4 text-orange-600 dark:text-orange-400" />,
+    chipClassName: "bg-orange-500/10",
   },
 ];
 
@@ -143,8 +148,11 @@ export default function Home() {
             </h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Link href="/research">
-                <Card className="transition-colors hover:bg-accent">
+                <Card className="transition-all hover:-translate-y-0.5 hover:shadow-md">
                   <CardHeader>
+                    <span className="mb-1 flex size-8 items-center justify-center rounded-md bg-sky-500/10">
+                      <Search className="size-4 text-sky-600 dark:text-sky-400" />
+                    </span>
                     <CardTitle className="text-sm">New Research</CardTitle>
                     <CardDescription>
                       Investigate a topic first — decide whether to turn it into a

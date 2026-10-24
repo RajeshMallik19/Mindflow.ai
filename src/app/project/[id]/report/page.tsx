@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ReportPrintButton } from "@/components/workspace/report-print-button";
+import { DeviceFrame } from "@/components/workspace/wireframe-canvas";
 import {
   AiInteractionDesignView,
   PersonasView,
@@ -21,20 +22,11 @@ import {
   type StoredResearchBrief,
   type UserFlow,
   type Wireframes,
+  type WireframeScreen,
 } from "@/lib/pipeline";
+import { WIREFRAME_ELEMENT_CLASS, WIREFRAME_ELEMENT_ICON } from "@/lib/wireframe-style";
 
 const STAGE_IDS = STAGES.map((s) => s.id);
-
-const WIREFRAME_ELEMENT_CLASS: Record<string, string> = {
-  header: "w-full h-10 bg-muted font-semibold",
-  nav: "w-full h-8 bg-muted/60 text-xs",
-  text: "flex-1 min-h-12 bg-white dark:bg-zinc-900 border text-xs",
-  button: "w-24 h-8 bg-primary text-primary-foreground text-xs justify-center",
-  image: "flex-1 h-24 bg-muted text-xs",
-  input: "flex-1 h-8 border text-xs text-muted-foreground",
-  card: "flex-1 min-h-20 bg-white dark:bg-zinc-900 border text-xs",
-  footer: "w-full h-10 bg-muted/60 text-xs",
-};
 
 function IaTree({ sitemap }: { sitemap: IaSitemap }) {
   const byParent = new Map<string | null, IaSitemap["nodes"]>();
@@ -91,6 +83,48 @@ function UserFlowList({ flow }: { flow: UserFlow }) {
   );
 }
 
+function ScreenMockup({ screen }: { screen: WireframeScreen }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {screen.name}
+      </p>
+      <div className="inline-block max-w-full overflow-x-auto p-1">
+        <DeviceFrame device={screen.device}>
+          <div
+            style={{ width: screen.device === "mobile" ? 320 : 640 }}
+            className="flex flex-col gap-2 bg-background p-3"
+          >
+            {screen.sections.map((section) => (
+              <div
+                key={section.id}
+                className={`flex gap-2 ${section.direction === "row" ? "flex-row" : "flex-col"}`}
+              >
+                {section.elements.map((el) => {
+                  const Icon = WIREFRAME_ELEMENT_ICON[el.type];
+                  return (
+                    <div
+                      key={el.id}
+                      className={`flex items-center gap-1.5 px-2 ${
+                        el.type === "image" ? "flex-col justify-center gap-1" : ""
+                      } ${WIREFRAME_ELEMENT_CLASS[el.type]}`}
+                    >
+                      <Icon
+                        className={el.type === "image" ? "size-5 opacity-60" : "size-3.5 shrink-0 opacity-70"}
+                      />
+                      <span className="truncate">{el.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </DeviceFrame>
+      </div>
+    </div>
+  );
+}
+
 function WireframeScreens({ data }: { data: Wireframes }) {
   if (isLegacyWireframes(data)) {
     return (
@@ -101,37 +135,42 @@ function WireframeScreens({ data }: { data: Wireframes }) {
     );
   }
 
+  const web = data.screens.filter((s) => s.device === "desktop");
+  const mobile = data.screens.filter((s) => s.device === "mobile");
+  const grouped = web.length > 0 && mobile.length > 0;
+
+  if (!grouped) {
+    return (
+      <div className="flex flex-col gap-6">
+        {data.screens.map((screen, i) => (
+          <ScreenMockup key={i} screen={screen} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-6">
-      {data.screens.map((screen, i) => (
-        <div key={i}>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {screen.name} ({screen.device})
-          </p>
-          <div
-            style={{ width: screen.device === "mobile" ? 320 : 720, maxWidth: "100%" }}
-            className="flex flex-col rounded-lg border bg-background shadow-sm"
-          >
-            {screen.sections.map((section) => (
-              <div
-                key={section.id}
-                className={`flex gap-2 border-b p-2 last:border-b-0 ${
-                  section.direction === "row" ? "flex-row" : "flex-col"
-                }`}
-              >
-                {section.elements.map((el) => (
-                  <div
-                    key={el.id}
-                    className={`flex items-center rounded-md border px-2 ${WIREFRAME_ELEMENT_CLASS[el.type] ?? ""}`}
-                  >
-                    <span className="truncate">{el.label}</span>
-                  </div>
-                ))}
-              </div>
+    <div className="flex flex-col gap-8">
+      {web.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Web</h3>
+          <div className="flex flex-col gap-6">
+            {web.map((screen, i) => (
+              <ScreenMockup key={i} screen={screen} />
             ))}
           </div>
         </div>
-      ))}
+      )}
+      {mobile.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Mobile</h3>
+          <div className="flex flex-col gap-6">
+            {mobile.map((screen, i) => (
+              <ScreenMockup key={i} screen={screen} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
