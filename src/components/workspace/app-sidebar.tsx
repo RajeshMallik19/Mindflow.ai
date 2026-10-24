@@ -15,12 +15,18 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
       </div>
       <Separator />
 
-      <nav className="px-2 py-3">
+      <nav className="flex flex-col gap-0.5 px-2 py-3">
         <Link
           href="/"
           className="block rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
         >
           Home
+        </Link>
+        <Link
+          href="/research"
+          className="block rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
+        >
+          Research
         </Link>
       </nav>
       <Separator />

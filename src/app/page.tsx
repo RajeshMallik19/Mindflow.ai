@@ -16,12 +16,6 @@ import type { Project } from "@/lib/types";
 
 const QUICK_ACTIONS = [
   {
-    title: "New Research",
-    description: "Give the Research Agent a topic to investigate.",
-    defaultName: "Untitled research",
-    defaultDescription: "",
-  },
-  {
     title: "New Product Thinking project",
     description: "Turn an idea into personas, user stories, and an IA.",
     defaultName: "Untitled product",
@@ -144,6 +138,17 @@ export default function Home() {
               Quick actions
             </h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Link href="/research">
+                <Card className="transition-colors hover:bg-accent">
+                  <CardHeader>
+                    <CardTitle className="text-sm">New Research</CardTitle>
+                    <CardDescription>
+                      Investigate a topic first — decide whether to turn it into a
+                      project after.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
               {QUICK_ACTIONS.map((action) => (
                 <QuickActionCard key={action.title} {...action} />
               ))}

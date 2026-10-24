@@ -21,7 +21,7 @@ import {
 } from "@/components/workspace/stage-views";
 import { layoutIaSitemap } from "@/lib/ia-layout";
 import type { FlowData } from "@/lib/flow-artifact";
-import { STAGES, type StageId } from "@/lib/pipeline";
+import { STAGES, type StageId, type StoredResearchBrief } from "@/lib/pipeline";
 
 const STAGE_ICONS: Record<StageId, React.ComponentType<{ className?: string }>> = {
   research_brief: Search,
@@ -44,7 +44,8 @@ export function PipelineView({
   const [activeTab, setActiveTab] = useState<StageId>(STAGES[0].id);
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [errors, setErrors] = useState<Partial<Record<StageId, string>>>({});
-  const [tone, setTone] = useState<"plain" | "gossip">("plain");
+  const [researchMode, setResearchMode] = useState<"simple" | "gossip">("simple");
+  const [convertingGossip, setConvertingGossip] = useState(false);
 
   async function runStage(stageId: StageId) {
     setRunningStage(stageId);
@@ -54,11 +55,7 @@ export function PipelineView({
       const res = await fetch("/api/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          stageId,
-          ...(stageId === "research_brief" ? { tone } : {}),
-        }),
+        body: JSON.stringify({ projectId, stageId }),
       });
       const body = await res.json();
 
@@ -69,6 +66,7 @@ export function PipelineView({
       }
 
       setArtifacts((prev) => ({ ...prev, [stageId]: body.data }));
+      if (stageId === "research_brief") setResearchMode("simple");
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
@@ -76,6 +74,36 @@ export function PipelineView({
       }));
     } finally {
       setRunningStage(null);
+    }
+  }
+
+  async function convertGossip() {
+    setConvertingGossip(true);
+    setErrors((prev) => ({ ...prev, research_brief: undefined }));
+
+    try {
+      const res = await fetch("/api/pipeline/gossip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      });
+      const body = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          typeof body?.error === "string" ? body.error : "Gossip conversion failed",
+        );
+      }
+
+      setArtifacts((prev) => ({ ...prev, research_brief: body.data }));
+      setResearchMode("gossip");
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        research_brief: err instanceof Error ? err.message : "Something went wrong",
+      }));
+    } finally {
+      setConvertingGossip(false);
     }
   }
 
@@ -107,26 +135,6 @@ export function PipelineView({
 
           return (
             <TabsContent key={stage.id} value={stage.id} className="mt-0">
-              {stage.id === "research_brief" && !data && (
-                <div className="mb-3 flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Tone:</span>
-                  <Button
-                    size="sm"
-                    variant={tone === "plain" ? "default" : "outline"}
-                    onClick={() => setTone("plain")}
-                  >
-                    Plain
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tone === "gossip" ? "default" : "outline"}
-                    onClick={() => setTone("gossip")}
-                  >
-                    Gossip
-                  </Button>
-                </div>
-              )}
-
               {errors[stage.id] && (
                 <p className="mb-3 text-sm text-destructive">{errors[stage.id]}</p>
               )}
@@ -154,7 +162,38 @@ export function PipelineView({
                 </Card>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    {stage.id === "research_brief" ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={researchMode === "simple" ? "default" : "outline"}
+                          onClick={() => setResearchMode("simple")}
+                        >
+                          Simple
+                        </Button>
+                        {(data as StoredResearchBrief).gossip ? (
+                          <Button
+                            size="sm"
+                            variant={researchMode === "gossip" ? "default" : "outline"}
+                            onClick={() => setResearchMode("gossip")}
+                          >
+                            Gossip
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={convertGossip}
+                            disabled={convertingGossip}
+                          >
+                            {convertingGossip ? "Converting…" : "Convert to Gossip mode"}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div />
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -165,7 +204,14 @@ export function PipelineView({
                     </Button>
                   </div>
 
-                  {stage.id === "research_brief" && <ResearchView data={data as never} />}
+                  {stage.id === "research_brief" && (
+                    <ResearchView
+                      data={
+                        ((data as StoredResearchBrief)[researchMode] ??
+                          (data as StoredResearchBrief).simple) as never
+                      }
+                    />
+                  )}
                   {stage.id === "personas" && <PersonasView data={data as never} />}
                   {stage.id === "user_stories" && <UserStoriesView data={data as never} />}
                   {stage.id === "wireframes" && <WireframesView data={data as never} />}

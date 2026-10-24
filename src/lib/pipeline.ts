@@ -7,6 +7,21 @@ export const ResearchBriefSchema = z.object({
 });
 export type ResearchBrief = z.infer<typeof ResearchBriefSchema>;
 
+// What actually gets stored for the research_brief artifact type: the
+// factual "simple" version is always generated first; "gossip" is a later,
+// optional conversion of that same result, never a separately-generated
+// original. Downstream stages always read .simple, never .gossip.
+export type StoredResearchBrief = { simple: ResearchBrief; gossip?: ResearchBrief };
+
+// Back-compat: research_brief was originally stored as a flat ResearchBrief,
+// before the {simple, gossip?} wrapper existed.
+export function normalizeStoredResearchBrief(parsed: unknown): StoredResearchBrief {
+  if (parsed && typeof parsed === "object" && "simple" in parsed) {
+    return parsed as StoredResearchBrief;
+  }
+  return { simple: parsed as ResearchBrief };
+}
+
 export const PersonasSchema = z.object({
   personas: z.array(
     z.object({
@@ -65,7 +80,6 @@ export type StageId =
 export type PipelineContext = {
   project: { name: string; description: string };
   upstream: Partial<Record<StageId, unknown>>;
-  tone?: "plain" | "gossip";
 };
 
 export type StageDef = {
@@ -86,18 +100,12 @@ export const STAGES: StageDef[] = [
     prerequisites: [],
     schema: ResearchBriefSchema,
     buildPrompt: (ctx) => {
-      const tone = ctx.tone ?? "plain";
-      const toneInstruction =
-        tone === "gossip"
-          ? "Write the summary in a gossipy, Gen-Z, informal tone — like you're dishing out juicy details to a friend — while keeping every fact accurate. Keep keyFindings and openQuestions still clear and scannable."
-          : "Write the summary in a clear, neutral, professional tone.";
-
       return `You are the Research Agent inside MindFlow AI, a personal product-design workspace. Investigate the problem below and produce a research brief.
 
 Project: ${ctx.project.name}
 Description: ${ctx.project.description || "(no description provided)"}
 
-${toneInstruction}
+Write the summary in a clear, neutral, professional tone. Separate verified findings from open questions/uncertainty.
 
 Return JSON matching this shape:
 { "summary": string, "keyFindings": string[], "openQuestions": string[] }
@@ -111,7 +119,7 @@ ${JSON_INSTRUCTION}`;
     prerequisites: ["research_brief"],
     schema: PersonasSchema,
     buildPrompt: (ctx) => {
-      const research = ctx.upstream.research_brief as ResearchBrief | undefined;
+      const research = (ctx.upstream.research_brief as StoredResearchBrief | undefined)?.simple;
       return `You are the Persona Maker inside MindFlow AI. Build 2-3 user personas grounded in the research below.
 
 Project: ${ctx.project.name}
@@ -130,7 +138,7 @@ ${JSON_INSTRUCTION}`;
     prerequisites: ["research_brief", "personas"],
     schema: UserStoriesSchema,
     buildPrompt: (ctx) => {
-      const research = ctx.upstream.research_brief as ResearchBrief | undefined;
+      const research = (ctx.upstream.research_brief as StoredResearchBrief | undefined)?.simple;
       const personas = ctx.upstream.personas as Personas | undefined;
       const personaNames = personas?.personas?.map((p) => `${p.name} (${p.role})`).join(", ");
 
@@ -199,4 +207,19 @@ export function getStage(id: StageId): StageDef {
   const stage = STAGES.find((s) => s.id === id);
   if (!stage) throw new Error(`Unknown stage: ${id}`);
   return stage;
+}
+
+// Converts an already-generated research brief into Gen-Z gossip style.
+// This is always a rewrite of existing output, never an independent
+// generation — the facts must stay identical, only the delivery changes.
+export function buildGossipPrompt(brief: ResearchBrief): string {
+  return `Rewrite the research brief below in a gossipy, Gen-Z, informal tone — like you're dishing out juicy details to a friend. Keep every fact, finding, and open question identical in meaning; only change the delivery style. Keep keyFindings and openQuestions as separate short items, just reworded in the same tone.
+
+Original brief:
+${JSON.stringify(brief)}
+
+Return JSON matching this shape:
+{ "summary": string, "keyFindings": string[], "openQuestions": string[] }
+
+${JSON_INSTRUCTION}`;
 }

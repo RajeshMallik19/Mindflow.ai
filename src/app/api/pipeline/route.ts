@@ -17,7 +17,6 @@ const STAGE_IDS: [StageId, ...StageId[]] = [
 const RequestSchema = z.object({
   projectId: z.string(),
   stageId: z.enum(STAGE_IDS),
-  tone: z.enum(["plain", "gossip"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { projectId, stageId, tone } = parsed.data;
+  const { projectId, stageId } = parsed.data;
 
   const project = await db.project.findUnique({ where: { id: projectId } });
   if (!project) {
@@ -63,7 +62,6 @@ export async function POST(req: Request) {
   const prompt = stage.buildPrompt({
     project: { name: project.name, description: project.description },
     upstream,
-    tone,
   });
 
   let result;
@@ -76,12 +74,14 @@ export async function POST(req: Request) {
     );
   }
 
+  const stored = stageId === "research_brief" ? { simple: result } : result;
+
   await upsertArtifact({
     projectId,
     type: stageId,
     title: stage.title,
-    content: JSON.stringify(result),
+    content: JSON.stringify(stored),
   });
 
-  return NextResponse.json({ stageId, data: result });
+  return NextResponse.json({ stageId, data: stored });
 }

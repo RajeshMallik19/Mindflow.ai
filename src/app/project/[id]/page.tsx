@@ -6,7 +6,7 @@ import { CopilotPanel } from "@/components/workspace/copilot-panel";
 import { PipelineView } from "@/components/workspace/pipeline-view";
 import { parseFlowArtifact } from "@/lib/flow-artifact";
 import { db } from "@/lib/db";
-import { STAGES, type StageId } from "@/lib/pipeline";
+import { normalizeStoredResearchBrief, STAGES, type StageId } from "@/lib/pipeline";
 import type { Project } from "@/lib/types";
 
 function ProjectSidebarFallback() {
@@ -76,7 +76,11 @@ async function ProjectContent({ id }: { id: string }) {
       continue;
     }
     try {
-      initialArtifacts[artifact.type as StageId] = JSON.parse(artifact.content);
+      let parsed = JSON.parse(artifact.content);
+      if (artifact.type === "research_brief") {
+        parsed = normalizeStoredResearchBrief(parsed);
+      }
+      initialArtifacts[artifact.type as StageId] = parsed;
     } catch {
       // Skip artifacts that somehow don't contain valid JSON.
     }
