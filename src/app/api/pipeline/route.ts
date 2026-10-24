@@ -8,9 +8,12 @@ import { getStage, type StageId } from "@/lib/pipeline";
 
 const STAGE_IDS: [StageId, ...StageId[]] = [
   "research_brief",
+  "problem_framing",
   "personas",
   "user_stories",
   "ia_sitemap",
+  "ux_strategy",
+  "ai_interaction_design",
   "wireframes",
 ];
 
@@ -32,11 +35,12 @@ export async function POST(req: Request) {
   }
 
   const stage = getStage(stageId);
+  const contextTypes = [...stage.prerequisites, ...(stage.optionalContext ?? [])];
 
   const existingArtifacts =
-    stage.prerequisites.length > 0
+    contextTypes.length > 0
       ? await db.artifact.findMany({
-          where: { projectId, type: { in: stage.prerequisites } },
+          where: { projectId, type: { in: contextTypes } },
         })
       : [];
 

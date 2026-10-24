@@ -70,11 +70,34 @@ export const WireframesSchema = z.object({
 });
 export type Wireframes = z.infer<typeof WireframesSchema>;
 
+export const ProblemFramingSchema = z.object({
+  problemStatement: z.string(),
+  assumptions: z.array(z.string()),
+  opportunityAreas: z.array(z.string()),
+});
+export type ProblemFraming = z.infer<typeof ProblemFramingSchema>;
+
+export const UxStrategySchema = z.object({
+  recommendations: z.array(z.string()),
+  interactionPrinciples: z.array(z.string()),
+});
+export type UxStrategy = z.infer<typeof UxStrategySchema>;
+
+export const AiInteractionDesignSchema = z.object({
+  behaviors: z.array(z.object({ scenario: z.string(), aiResponse: z.string() })),
+  fallbacks: z.array(z.string()),
+  confidenceHandling: z.string(),
+});
+export type AiInteractionDesign = z.infer<typeof AiInteractionDesignSchema>;
+
 export type StageId =
   | "research_brief"
+  | "problem_framing"
   | "personas"
   | "user_stories"
   | "ia_sitemap"
+  | "ux_strategy"
+  | "ai_interaction_design"
   | "wireframes";
 
 export type PipelineContext = {
@@ -86,6 +109,10 @@ export type StageDef = {
   id: StageId;
   title: string;
   prerequisites: StageId[];
+  // Included in upstream context if available, but never blocks the stage
+  // from running — this is what makes the menu "open-ended" rather than a
+  // rigid chain: a specialist can be enriched by others without requiring them.
+  optionalContext?: StageId[];
   schema: z.ZodType;
   buildPrompt: (ctx: PipelineContext) => string;
 };
@@ -109,6 +136,25 @@ Write the summary in a clear, neutral, professional tone. Separate verified find
 
 Return JSON matching this shape:
 { "summary": string, "keyFindings": string[], "openQuestions": string[] }
+
+${JSON_INSTRUCTION}`;
+    },
+  },
+  {
+    id: "problem_framing",
+    title: "Problem Framing",
+    prerequisites: ["research_brief"],
+    schema: ProblemFramingSchema,
+    buildPrompt: (ctx) => {
+      const research = (ctx.upstream.research_brief as StoredResearchBrief | undefined)?.simple;
+      return `You are the Problem Framing Agent inside MindFlow AI. Turn the research below into a sharp problem statement.
+
+Project: ${ctx.project.name}
+Research summary: ${research?.summary ?? "(none)"}
+Key findings: ${research?.keyFindings?.join("; ") ?? "(none)"}
+
+Return JSON matching this shape:
+{ "problemStatement": string, "assumptions": string[], "opportunityAreas": string[] }
 
 ${JSON_INSTRUCTION}`;
     },
@@ -180,19 +226,68 @@ ${JSON_INSTRUCTION}`;
     },
   },
   {
+    id: "ux_strategy",
+    title: "UX Strategy",
+    prerequisites: ["personas", "user_stories"],
+    schema: UxStrategySchema,
+    buildPrompt: (ctx) => {
+      const personas = ctx.upstream.personas as Personas | undefined;
+      const stories = ctx.upstream.user_stories as UserStories | undefined;
+      const personaNames = personas?.personas?.map((p) => p.name).join(", ");
+      const storyTitles = stories?.stories?.map((s) => s.title).join("; ");
+
+      return `You are the UX Strategy Agent inside MindFlow AI. Recommend design direction and interaction principles for this product.
+
+Project: ${ctx.project.name}
+Personas: ${personaNames || "(none)"}
+User stories: ${storyTitles || "(none)"}
+
+Return JSON matching this shape:
+{ "recommendations": string[], "interactionPrinciples": string[] }
+
+${JSON_INSTRUCTION}`;
+    },
+  },
+  {
+    id: "ai_interaction_design",
+    title: "AI Interaction Design",
+    prerequisites: ["personas", "user_stories"],
+    schema: AiInteractionDesignSchema,
+    buildPrompt: (ctx) => {
+      const personas = ctx.upstream.personas as Personas | undefined;
+      const stories = ctx.upstream.user_stories as UserStories | undefined;
+      const personaNames = personas?.personas?.map((p) => p.name).join(", ");
+      const storyTitles = stories?.stories?.map((s) => s.title).join("; ");
+
+      return `You are the AI Interaction Design Agent inside MindFlow AI. This product itself uses AI, so design how it should behave: what it does in uncertain situations, and how it fails gracefully.
+
+Project: ${ctx.project.name}
+Personas: ${personaNames || "(none)"}
+User stories: ${storyTitles || "(none)"}
+
+Return JSON matching this shape:
+{ "behaviors": [{ "scenario": string, "aiResponse": string }], "fallbacks": string[], "confidenceHandling": string }
+
+${JSON_INSTRUCTION}`;
+    },
+  },
+  {
     id: "wireframes",
     title: "Wireframes",
     prerequisites: ["ia_sitemap"],
+    optionalContext: ["ux_strategy", "ai_interaction_design"],
     schema: WireframesSchema,
     buildPrompt: (ctx) => {
       const ia = ctx.upstream.ia_sitemap as IaSitemap | undefined;
       const nodeLabels = ia?.nodes?.map((n) => n.label).join(", ");
+      const strategy = ctx.upstream.ux_strategy as UxStrategy | undefined;
+      const aiDesign = ctx.upstream.ai_interaction_design as AiInteractionDesign | undefined;
 
       return `You are the Design Agent inside MindFlow AI. Produce a wireframe spec (structure, not visual styling) for the screens below.
 
 Project: ${ctx.project.name}
 Sitemap screens: ${nodeLabels || "(none)"}
-
+${strategy ? `UX strategy recommendations: ${strategy.recommendations.join("; ")}\nInteraction principles: ${strategy.interactionPrinciples.join("; ")}\n` : ""}${aiDesign ? `AI interaction fallbacks to account for: ${aiDesign.fallbacks.join("; ")}\n` : ""}
 For each major screen, describe its purpose and its layout sections (e.g. "header with search bar", "grid of result cards", "sticky footer with CTA").
 
 Return JSON matching this shape:

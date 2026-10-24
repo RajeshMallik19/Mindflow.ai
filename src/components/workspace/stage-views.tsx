@@ -7,7 +7,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Personas, ResearchBrief, UserStories, Wireframes } from "@/lib/pipeline";
+import type {
+  AiInteractionDesign,
+  Personas,
+  ProblemFraming,
+  ResearchBrief,
+  UserStories,
+  UxStrategy,
+  Wireframes,
+} from "@/lib/pipeline";
 
 export function ResearchView({ data }: { data: ResearchBrief }) {
   return (
@@ -116,6 +124,118 @@ export function UserStoriesView({ data }: { data: UserStories }) {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+export function ProblemFramingView({ data }: { data: ProblemFraming }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Problem statement</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">{data.problemStatement}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Assumptions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+            {data.assumptions.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Opportunity areas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-1">
+            {data.opportunityAreas.map((o, i) => (
+              <Badge key={i} variant="secondary">
+                {o}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function UxStrategyView({ data }: { data: UxStrategy }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1 pl-4 text-sm">
+            {data.recommendations.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Interaction principles</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+            {data.interactionPrinciples.map((p, i) => (
+              <li key={i}>{p}</li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function AiInteractionDesignView({ data }: { data: AiInteractionDesign }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {data.behaviors.map((b, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <CardTitle className="text-sm">{b.scenario}</CardTitle>
+            <CardDescription>{b.aiResponse}</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Fallbacks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+            {data.fallbacks.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Confidence handling</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{data.confidenceHandling}</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
