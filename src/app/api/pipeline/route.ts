@@ -13,6 +13,7 @@ const STAGE_IDS: [StageId, ...StageId[]] = [
   "personas",
   "user_stories",
   "ia_sitemap",
+  "user_flow",
   "ux_strategy",
   "ai_interaction_design",
   "wireframes",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bot,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   Search,
   Target,
   Users,
+  Workflow,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,9 +25,11 @@ import {
   UserStoriesView,
   UxStrategyView,
 } from "@/components/workspace/stage-views";
+import { VersionHistoryDialog } from "@/components/workspace/version-history-dialog";
 import { WireframeCanvas } from "@/components/workspace/wireframe-canvas";
 import { toFriendlyMessage } from "@/lib/friendly-error";
 import { layoutIaSitemap } from "@/lib/ia-layout";
+import { layoutUserFlow } from "@/lib/user-flow-layout";
 import type { FlowData } from "@/lib/flow-artifact";
 import {
   getTopologicalOrder,
@@ -51,6 +55,7 @@ const STAGE_ICONS: Record<StageId, React.ComponentType<{ className?: string }>> 
   personas: Users,
   user_stories: ListChecks,
   ia_sitemap: MapIcon,
+  user_flow: Workflow,
   ux_strategy: Compass,
   ai_interaction_design: Bot,
   wireframes: LayoutTemplate,
@@ -60,10 +65,12 @@ export function PipelineView({
   projectId,
   initialArtifacts,
   initialIaDiagram,
+  initialUserFlowDiagram,
 }: {
   projectId: string;
   initialArtifacts: Partial<Record<StageId, unknown>>;
   initialIaDiagram?: FlowData;
+  initialUserFlowDiagram?: FlowData;
 }) {
   const [artifacts, setArtifacts] = useState(initialArtifacts);
   const [activeStage, setActiveStage] = useState<StageId | null>(null);
@@ -73,6 +80,24 @@ export function PipelineView({
   const [convertingGossip, setConvertingGossip] = useState(false);
   const [toneByStage, setToneByStage] = useState<Partial<Record<StageId, string>>>({});
   const [runningAll, setRunningAll] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Lets the command palette's "Run next specialist" jump here via
+  // ?run=next instead of needing to share live pipeline state globally.
+  useEffect(() => {
+    if (searchParams.get("run") !== "next") return;
+    router.replace(pathname);
+
+    const nextId = getTopologicalOrder().find((id) => artifacts[id] === undefined);
+    if (nextId) {
+      setActiveStage(nextId);
+      void runStage(nextId);
+    }
+    // Intentionally runs once per mount, for the param present at load time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function runStage(stageId: StageId): Promise<boolean> {
     setRunningStage(stageId);
@@ -290,14 +315,23 @@ export function PipelineView({
                 ) : (
                   <div />
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => runStage(activeDef.id)}
-                  disabled={isRunning}
-                >
-                  {isRunning ? "Regenerating…" : "Regenerate"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <VersionHistoryDialog
+                    projectId={projectId}
+                    type={activeDef.id}
+                    onRestored={(data) =>
+                      setArtifacts((prev) => ({ ...prev, [activeDef.id]: data }))
+                    }
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => runStage(activeDef.id)}
+                    disabled={isRunning}
+                  >
+                    {isRunning ? "Regenerating…" : "Regenerate"}
+                  </Button>
+                </div>
               </div>
 
               {activeDef.id === "research_brief" && (
@@ -329,6 +363,16 @@ export function PipelineView({
                     artifactType="ia_diagram"
                     artifactTitle="IA diagram"
                     initial={initialIaDiagram ?? layoutIaSitemap(activeData as never)}
+                  />
+                </div>
+              )}
+              {activeDef.id === "user_flow" && (
+                <div className="h-[500px] rounded-lg border">
+                  <FlowEditor
+                    projectId={projectId}
+                    artifactType="user_flow_diagram"
+                    artifactTitle="User flow diagram"
+                    initial={initialUserFlowDiagram ?? layoutUserFlow(activeData as never)}
                   />
                 </div>
               )}

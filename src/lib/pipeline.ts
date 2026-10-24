@@ -120,6 +120,27 @@ export function isLegacyWireframes(parsed: unknown): boolean {
   );
 }
 
+export const UserFlowNodeSchema = z.object({
+  id: z.string(),
+  type: z.enum(["start", "action", "decision"]),
+  label: z.string(),
+});
+export type UserFlowNode = z.infer<typeof UserFlowNodeSchema>;
+
+export const UserFlowEdgeSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  target: z.string(),
+  label: z.string().nullable().optional(),
+});
+export type UserFlowEdge = z.infer<typeof UserFlowEdgeSchema>;
+
+export const UserFlowSchema = z.object({
+  nodes: z.array(UserFlowNodeSchema),
+  edges: z.array(UserFlowEdgeSchema),
+});
+export type UserFlow = z.infer<typeof UserFlowSchema>;
+
 export const ProblemFramingSchema = z.object({
   problemStatement: z.string(),
   assumptions: z.array(z.string()),
@@ -146,6 +167,7 @@ export type StageId =
   | "personas"
   | "user_stories"
   | "ia_sitemap"
+  | "user_flow"
   | "ux_strategy"
   | "ai_interaction_design"
   | "wireframes";
@@ -289,6 +311,31 @@ Return JSON matching this shape:
 { "nodes": [{ "id": string, "label": string, "parentId": string | null }] }
 
 Keep ids short and unique (e.g. "home", "search", "search-results"). Keep the tree to a reasonable size (roughly 8-20 nodes).
+
+${JSON_INSTRUCTION}`;
+    },
+  },
+  {
+    id: "user_flow",
+    title: "User Flow",
+    prerequisites: ["personas", "user_stories"],
+    schema: UserFlowSchema,
+    buildPrompt: (ctx) => {
+      const personas = ctx.upstream.personas as Personas | undefined;
+      const stories = ctx.upstream.user_stories as UserStories | undefined;
+      const personaNames = personas?.personas?.map((p) => p.name).join(", ");
+      const storyTitles = stories?.stories?.map((s) => s.title).join("; ");
+
+      return `You are the User Flow Agent inside MindFlow AI. Map the primary task flow a user takes through this product: the start point, key actions, and decision points with their branches.
+
+Project: ${ctx.project.name}
+Personas: ${personaNames || "(none)"}
+User stories: ${storyTitles || "(none)"}
+
+Return JSON matching this shape:
+{ "nodes": [{ "id": string, "type": "start" | "action" | "decision", "label": string }], "edges": [{ "id": string, "source": string, "target": string, "label": string | null }] }
+
+Guidelines: exactly one "start" node. Every decision node should have exactly two outgoing edges, each labeled with its branch (e.g. "Yes"/"No"). Keep ids short and unique (e.g. "start", "n1", "n2"). Aim for 6-14 nodes covering one complete primary flow, including at least one decision point if the product has any branching logic.
 
 ${JSON_INSTRUCTION}`;
     },

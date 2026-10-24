@@ -54,13 +54,13 @@ type LabelDialogState =
 function FlowCanvas({
   projectId,
   initial,
-  artifactType = "user_flow",
-  artifactTitle = "User flow",
+  artifactType,
+  artifactTitle,
 }: {
   projectId: string;
   initial: FlowData;
-  artifactType?: string;
-  artifactTitle?: string;
+  artifactType: string;
+  artifactTitle: string;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
@@ -203,8 +203,8 @@ function FlowCanvas({
 export function FlowEditor(props: {
   projectId: string;
   initial?: FlowData;
-  artifactType?: string;
-  artifactTitle?: string;
+  artifactType: string;
+  artifactTitle: string;
 }) {
   return (
     <ReactFlowProvider>

@@ -1,6 +1,8 @@
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FileText } from "lucide-react";
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { CopilotPanel } from "@/components/workspace/copilot-panel";
 import { PipelineView } from "@/components/workspace/pipeline-view";
@@ -66,15 +68,20 @@ async function ProjectContent({ id }: { id: string }) {
   }
 
   const artifacts = await db.artifact.findMany({
-    where: { projectId: id, type: { in: [...STAGE_IDS, "ia_diagram"] } },
+    where: { projectId: id, type: { in: [...STAGE_IDS, "ia_diagram", "user_flow_diagram"] } },
   });
 
   const initialArtifacts: Partial<Record<StageId, unknown>> = {};
   let initialIaDiagram;
+  let initialUserFlowDiagram;
 
   for (const artifact of artifacts) {
     if (artifact.type === "ia_diagram") {
       initialIaDiagram = parseFlowArtifact(artifact.content);
+      continue;
+    }
+    if (artifact.type === "user_flow_diagram") {
+      initialUserFlowDiagram = parseFlowArtifact(artifact.content);
       continue;
     }
     try {
@@ -101,11 +108,19 @@ async function ProjectContent({ id }: { id: string }) {
             </p>
           )}
         </div>
-        <ProjectHeaderMenu
-          projectId={project.id}
-          name={project.name}
-          description={project.description}
-        />
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/project/${project.id}/report`}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <FileText className="size-3.5" /> View report
+          </Link>
+          <ProjectHeaderMenu
+            projectId={project.id}
+            name={project.name}
+            description={project.description}
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-hidden">
@@ -113,6 +128,7 @@ async function ProjectContent({ id }: { id: string }) {
           projectId={project.id}
           initialArtifacts={initialArtifacts}
           initialIaDiagram={initialIaDiagram}
+          initialUserFlowDiagram={initialUserFlowDiagram}
         />
       </div>
     </main>

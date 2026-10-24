@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { FileText, FolderOpen, MessageSquare, Sparkles } from "lucide-react";
+import { FileText, FolderOpen, MessageSquare, Plus, Sparkles } from "lucide-react";
+import { createProjectFromTemplate } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,8 @@ export function KnowledgeBrainSearch() {
   const [patterns, setPatterns] = useState<Patterns | null>(null);
   const [findingPatterns, setFindingPatterns] = useState(false);
   const [patternsError, setPatternsError] = useState<string | null>(null);
+  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
+  const [, startCreating] = useTransition();
 
   async function runSearch() {
     const q = query.trim();
@@ -45,6 +48,14 @@ export function KnowledgeBrainSearch() {
     } finally {
       setSearching(false);
     }
+  }
+
+  function applyTemplate(template: string) {
+    if (creatingTemplate) return;
+    setCreatingTemplate(template);
+    startCreating(() => {
+      void createProjectFromTemplate(template);
+    });
   }
 
   async function findPatterns() {
@@ -160,13 +171,30 @@ export function KnowledgeBrainSearch() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Suggested templates</CardTitle>
+                  <CardDescription>
+                    Click one to start a new project pre-seeded with that idea.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ul className="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
-                    {patterns.suggestedTemplates.map((p, i) => (
-                      <li key={i}>{p}</li>
-                    ))}
-                  </ul>
+                <CardContent className="flex flex-col gap-2">
+                  {patterns.suggestedTemplates.map((template, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => applyTemplate(template)}
+                      disabled={creatingTemplate !== null}
+                      className="flex items-start gap-2 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-60"
+                    >
+                      <Plus className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <span>
+                        {template}
+                        {creatingTemplate === template && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            Creating…
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
                 </CardContent>
               </Card>
             )}

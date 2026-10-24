@@ -40,6 +40,17 @@ export async function deleteProject(projectId: string) {
   redirect("/");
 }
 
+export async function createProjectFromTemplate(template: string) {
+  const name = template.length > 60 ? `${template.slice(0, 57)}...` : template;
+
+  const project = await db.project.create({
+    data: { name, description: template },
+  });
+
+  revalidatePath("/");
+  redirect(`/project/${project.id}`);
+}
+
 export async function createProjectFromResearch(
   name: string,
   topic: string,

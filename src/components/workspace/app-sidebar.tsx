@@ -4,12 +4,15 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { CommandPalette } from "@/components/workspace/command-palette";
 import { ThemeToggle } from "@/components/workspace/theme-toggle";
 import type { Project } from "@/lib/types";
 
 export function AppSidebar({ projects }: { projects: Project[] }) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-muted/50">
+      <CommandPalette projects={projects} />
+
       <div className="flex items-center justify-between px-4 py-4">
         <span className="text-sm font-semibold tracking-tight">MindFlow AI</span>
         <ThemeToggle />
@@ -35,6 +38,7 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
         >
           Knowledge Brain
         </Link>
+        <p className="px-2 pt-1 text-xs text-muted-foreground">Press ⌘K to jump anywhere</p>
       </nav>
       <Separator />
 

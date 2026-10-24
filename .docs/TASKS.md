@@ -171,6 +171,43 @@ a new session should scan to know what's done and what's next.
         Cache Components) was serving old SSR output after a structural
         edit — cleared it; not a real bug, but worth knowing this can
         happen after this kind of change.
+- [x] **Five more requested innovations**, all built and verified against
+      real data:
+      - **Version history + restore UI** (`version-history-dialog.tsx`,
+        `/api/artifacts/history`, `/api/artifacts/restore`) — every
+        specialist's "History" button lists its past `ArtifactVersion` rows
+        with timestamps; restoring versions the then-current content first
+        (never destructive). Verified live against Hackloop.ai's real
+        research_brief history (already had a version from earlier tone
+        testing) — restore correctly bumped the version count.
+      - **9th specialist: User Flow Agent** (`pipeline.ts`'s `user_flow`
+        stage, `user-flow-layout.ts`) — closes a gap from PRD.md's original
+        8-specialist roster that was never built. Generates a real task
+        flow (start/action/decision nodes, branching edges with labels)
+        from personas + user stories, auto-laid-out via BFS depth from the
+        start node, rendered on the existing `FlowEditor` canvas
+        (`user_flow_diagram` artifact — kept separate from the semantic
+        `user_flow` data, same split as `ia_sitemap`/`ia_diagram`). Checked
+        the live DB for legacy `user_flow` artifacts before reusing that
+        name (none existed) — the old manual-canvas artifact type was never
+        actually written to production data. Verified live against
+        Hackloop.ai: produced a correct branching flow including a loop-back
+        edge, which the BFS layout handled without infinite-looping.
+      - **Actionable pattern templates** — Knowledge Brain's "Suggested
+        templates" are now clickable; picking one calls
+        `createProjectFromTemplate` and redirects straight into a new
+        pre-seeded project, instead of being inert text.
+      - **Command palette (Cmd+K)** (`command-palette.tsx`, mounted once in
+        `app-sidebar.tsx` so it's global) — jump to Home/Research/Knowledge
+        Brain/any project, create a new project, or (while on a project
+        page) run that project's next pending specialist via a
+        `?run=next` query param that `pipeline-view.tsx` picks up on mount.
+      - **Shareable project HTML report** (`/project/[id]/report`) — a
+        clean, chrome-free, print-friendly page bundling every completed
+        specialist's output (reusing the existing stage-view components
+        where possible) with a "Print / Save as PDF" button. Distinct from
+        `/api/export`, which is a raw-JSON backup dump, not something meant
+        for reading.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
@@ -192,12 +229,6 @@ a new session should scan to know what's done and what's next.
 
 - [ ] Ollama installation + local model, as a genuinely zero-quota fallback
       for local dev (user opted to try OpenRouter first instead).
-- [ ] Artifact version history UI (data model already supports it via
-      `artifact_versions`; no screen reads it yet).
-- [ ] The manual Start/Action/Decision diagram tool (`flow-editor.tsx`,
-      `user_flow` artifact type) is now mostly superseded by the IA stage's
-      auto-generated diagram — decide whether to keep it as a general-purpose
-      scratch canvas or retire it.
 
 ## Known constraints to keep respecting
 
