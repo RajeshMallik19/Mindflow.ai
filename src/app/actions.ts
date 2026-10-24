@@ -52,6 +52,36 @@ export async function deleteProject(projectId: string) {
   redirect("/");
 }
 
+export async function duplicateProject(projectId: string) {
+  const source = await db.project.findUnique({
+    where: { id: projectId },
+    include: { artifacts: true },
+  });
+  if (!source) return;
+
+  const copy = await db.project.create({
+    data: {
+      name: `${source.name} (copy)`,
+      description: source.description,
+      platform: source.platform,
+    },
+  });
+
+  if (source.artifacts.length > 0) {
+    await db.artifact.createMany({
+      data: source.artifacts.map((a) => ({
+        projectId: copy.id,
+        type: a.type,
+        title: a.title,
+        content: a.content,
+      })),
+    });
+  }
+
+  revalidatePath("/");
+  redirect(`/project/${copy.id}`);
+}
+
 export async function createProjectFromTemplate(template: string) {
   const name = template.length > 60 ? `${template.slice(0, 57)}...` : template;
 

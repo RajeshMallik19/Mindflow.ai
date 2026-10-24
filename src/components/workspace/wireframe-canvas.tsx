@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -321,6 +321,13 @@ export function WireframeCanvas({
           </Button>
         ))}
         <div className="flex-1" />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => window.open(`/project/${projectId}/report#wireframes`, "_blank")}
+        >
+          <Printer className="size-3.5" /> Export all (PDF)
+        </Button>
         <Button size="sm" variant="outline" onClick={copySvg}>
           Copy as SVG
         </Button>
@@ -335,8 +342,16 @@ export function WireframeCanvas({
         </Button>
       </div>
       {savedAt && <span className="text-xs text-muted-foreground">Saved at {savedAt}</span>}
+      {data.theme && (
+        <span className="text-xs text-muted-foreground">
+          Visual theme: <span className="font-medium text-foreground">{data.theme.vibe}</span>
+        </span>
+      )}
 
-      <div className="flex flex-wrap items-start gap-4">
+      <div
+        className="flex flex-wrap items-start gap-4"
+        style={data.theme ? ({ "--primary": data.theme.primaryHex } as React.CSSProperties) : undefined}
+      >
         {activeScreen && (
           <ScreenCanvas
             screen={activeScreen}

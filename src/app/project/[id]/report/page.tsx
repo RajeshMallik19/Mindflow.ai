@@ -138,39 +138,56 @@ function WireframeScreens({ data }: { data: Wireframes }) {
   const web = data.screens.filter((s) => s.device === "desktop");
   const mobile = data.screens.filter((s) => s.device === "mobile");
   const grouped = web.length > 0 && mobile.length > 0;
+  const themeStyle = data.theme
+    ? ({ "--primary": data.theme.primaryHex } as React.CSSProperties)
+    : undefined;
 
   if (!grouped) {
     return (
-      <div className="flex flex-col gap-6">
-        {data.screens.map((screen, i) => (
-          <ScreenMockup key={i} screen={screen} />
-        ))}
+      <div className="flex flex-col gap-3">
+        {data.theme && (
+          <span className="text-xs text-muted-foreground">
+            Visual theme: <span className="font-medium text-foreground">{data.theme.vibe}</span>
+          </span>
+        )}
+        <div className="flex flex-col gap-6" style={themeStyle}>
+          {data.screens.map((screen, i) => (
+            <ScreenMockup key={i} screen={screen} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {web.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Web</h3>
-          <div className="flex flex-col gap-6">
-            {web.map((screen, i) => (
-              <ScreenMockup key={i} screen={screen} />
-            ))}
-          </div>
-        </div>
+    <div className="flex flex-col gap-3">
+      {data.theme && (
+        <span className="text-xs text-muted-foreground">
+          Visual theme: <span className="font-medium text-foreground">{data.theme.vibe}</span>
+        </span>
       )}
-      {mobile.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Mobile</h3>
-          <div className="flex flex-col gap-6">
-            {mobile.map((screen, i) => (
-              <ScreenMockup key={i} screen={screen} />
-            ))}
+      <div className="flex flex-col gap-8" style={themeStyle}>
+        {web.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Web</h3>
+            <div className="flex flex-col gap-6">
+              {web.map((screen, i) => (
+                <ScreenMockup key={i} screen={screen} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {mobile.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Mobile</h3>
+            <div className="flex flex-col gap-6">
+              {mobile.map((screen, i) => (
+                <ScreenMockup key={i} screen={screen} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -267,7 +284,7 @@ export default async function ProjectReportPage({
           </section>
         )}
         {data.wireframes !== undefined && (
-          <section>
+          <section id="wireframes">
             <h2 className="mb-3 text-lg font-semibold">Wireframes</h2>
             <WireframeScreens data={data.wireframes as Wireframes} />
           </section>

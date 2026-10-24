@@ -99,8 +99,17 @@ export const WireframeScreenSchema = z.object({
 });
 export type WireframeScreen = z.infer<typeof WireframeScreenSchema>;
 
+// Optional and additive — old wireframe artifacts simply won't have a
+// theme, and consumers treat that as "use the app's default look."
+export const WireframeThemeSchema = z.object({
+  primaryHex: z.string(),
+  vibe: z.string(),
+});
+export type WireframeTheme = z.infer<typeof WireframeThemeSchema>;
+
 export const WireframesSchema = z.object({
   screens: z.array(WireframeScreenSchema),
+  theme: WireframeThemeSchema.optional(),
 });
 export type Wireframes = z.infer<typeof WireframesSchema>;
 
@@ -422,8 +431,10 @@ Each screen is a top-to-bottom stack of sections. Each section is a row or colum
 
 ${platformInstruction}
 
+Also propose a visual theme for this specific product: one primary brand color (as a hex code) that fits the product's purpose and audience, and a short phrase describing the intended visual personality (e.g. "warm and playful", "minimal and clinical", "bold and energetic").
+
 Return JSON matching this shape:
-{ "screens": [{ "name": string, "device": "mobile" | "desktop", "sections": [{ "id": string, "direction": "row" | "column", "elements": [{ "id": string, "type": string, "label": string }] }] }] }
+{ "screens": [{ "name": string, "device": "mobile" | "desktop", "sections": [{ "id": string, "direction": "row" | "column", "elements": [{ "id": string, "type": string, "label": string }] }] }], "theme": { "primaryHex": string, "vibe": string } }
 
 Guidelines: 3-6 sections per screen, 1-5 elements per section, short unique ids (e.g. "s1", "el1").
 

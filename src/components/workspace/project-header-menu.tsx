@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Trash2 } from "lucide-react";
-import { deleteProject, renameProject } from "@/app/actions";
+import { Copy, Pencil, Trash2 } from "lucide-react";
+import { deleteProject, duplicateProject, renameProject } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,9 +38,19 @@ export function ProjectHeaderMenu({
   const [draftDescription, setDraftDescription] = useState(description);
   const [draftPlatform, setDraftPlatform] = useState<Platform>(platform);
   const [pending, startTransition] = useTransition();
+  const [duplicating, startDuplicating] = useTransition();
 
   return (
     <div className="flex items-center gap-1">
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        title="Duplicate project"
+        disabled={duplicating}
+        onClick={() => startDuplicating(() => duplicateProject(projectId))}
+      >
+        <Copy className="size-3.5" />
+      </Button>
       <Button size="icon-sm" variant="ghost" onClick={() => setRenameOpen(true)}>
         <Pencil className="size-3.5" />
       </Button>

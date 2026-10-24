@@ -259,6 +259,28 @@ a new session should scan to know what's done and what's next.
       - Also hit the same known stale-Turbopack-cache issue from earlier
         this session (new exports not picked up by HMR) — cleared `.next`
         again, same fix as before.
+- [x] **Duplicate project, per-project AI theme, bundled wireframe export**,
+      all built and verified against real data:
+      - **Duplicate project** — `duplicateProject(projectId)` server action
+        clones a project (name suffixed "(copy)", same description/platform)
+        and all of its current artifacts (not version history, not
+        conversations). Button added to `project-header-menu.tsx`. Verified
+        by replaying the exact query logic against Hackloop.ai live (9
+        artifacts copied correctly), then cleaned up the test copy.
+      - **Per-project AI color theme** — `WireframesSchema` gained an
+        optional `theme: {primaryHex, vibe}` field (additive, so old
+        wireframe artifacts without it just fall back to the app's default
+        look). The wireframes prompt now asks the model to propose one
+        brand color + a short "vibe" phrase for that specific product.
+        Applied via a CSS variable override (`--primary`) scoped to just the
+        mock-up area — not the whole app — in both `wireframe-canvas.tsx`
+        and the report page. Verified live: Hackloop.ai got `#6366F1`,
+        "futuristic, high-velocity, and collaborative."
+      - **Bundle wireframe exports** — rather than building a PDF encoder
+        (new dependency, real complexity) an "Export all (PDF)" button in
+        the canvas opens `/project/[id]/report#wireframes` in a new tab,
+        reusing the report's existing high-fidelity rendering and its
+        Print/Save-as-PDF button. Zero new dependencies.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
