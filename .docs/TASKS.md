@@ -56,17 +56,25 @@ a new session should scan to know what's done and what's next.
       `.simple`. Added `normalizeStoredResearchBrief()` for back-compat
       with artifacts stored before this change (caught a real crash on the
       owner's own Hackloop.ai project during testing).
+- [x] **Expanded specialist roster to the full 8** from PRD.md: added
+      Problem Framing (prereq: research_brief), UX Strategy (prereq:
+      personas+user_stories), AI Interaction Design (prereq:
+      personas+user_stories). Added `StageDef.optionalContext` so a stage
+      can be enriched by another's output without hard-requiring it —
+      Wireframes now optionally pulls in UX Strategy + AI Interaction
+      Design (verified live: wireframe output picked up UX Strategy's
+      font-toggle/contrast recommendations). Replaced the fixed Tabs bar
+      with a grid of specialist cards you pick from — matches "open-ended
+      menu, not a rigid pipeline," and scales better than tabs at 8 items.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
 1. ~~Research Engine as a standalone pre-project entry point~~ **done.**
-2. **Next up:** re-scope the Product Design Agent's artifact menu from the
-   fixed 5-tab bar to an open-ended checklist, and add the Problem Framing,
-   UX Strategy, and AI Interaction Design specialists (8 total).
-3. Design Studio: real visual wireframe rendering (not text cards), the
-   editable properties panel, SVG export (realistic Figma path — paste SVG
-   into Figma, see PRD §5), responsive React prototype generation,
-   accessibility audits.
+2. ~~Expand specialist roster to 8 + open-ended menu~~ **done.**
+3. **Next up:** Design Studio: real visual wireframe rendering (not text
+   cards), the editable properties panel, SVG export (realistic Figma
+   path — paste SVG into Figma, see PRD §5), responsive React prototype
+   generation, accessibility audits.
 4. Re-scope the copilot to be a Knowledge Brain lookup/reference tool
    instead of a keyword-routed dispatcher to the pipeline subagents.
 5. Personal Knowledge Brain v1: Postgres full-text search over
