@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getProvider } from "@/lib/ai-provider";
 import { generateStructured } from "@/lib/json-output";
 import { getStage } from "@/lib/pipeline";
+import { checkAndIncrementRateLimit } from "@/lib/rate-limit";
 
 const RequestSchema = z.object({
   topic: z.string().min(1),
@@ -16,6 +17,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const { topic } = parsed.data;
+
+  const rateLimit = await checkAndIncrementRateLimit("ai_calls");
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: `Daily AI call limit reached (${rateLimit.limit}/day). Try again tomorrow.` },
+      { status: 429 },
+    );
+  }
 
   const stage = getStage("research_brief");
   const prompt = stage.buildPrompt({

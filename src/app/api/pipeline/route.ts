@@ -5,6 +5,7 @@ import { upsertArtifact } from "@/lib/artifacts";
 import { db } from "@/lib/db";
 import { generateStructured } from "@/lib/json-output";
 import { getStage, type StageId } from "@/lib/pipeline";
+import { checkAndIncrementRateLimit } from "@/lib/rate-limit";
 
 const STAGE_IDS: [StageId, ...StageId[]] = [
   "research_brief",
@@ -28,6 +29,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const { projectId, stageId } = parsed.data;
+
+  const rateLimit = await checkAndIncrementRateLimit("ai_calls");
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: `Daily AI call limit reached (${rateLimit.limit}/day). Try again tomorrow.` },
+      { status: 429 },
+    );
+  }
 
   const project = await db.project.findUnique({ where: { id: projectId } });
   if (!project) {

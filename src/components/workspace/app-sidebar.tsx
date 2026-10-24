@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { ThemeToggle } from "@/components/workspace/theme-toggle";
 import type { Project } from "@/lib/types";
 
 export function AppSidebar({ projects }: { projects: Project[] }) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-muted/50">
-      <div className="px-4 py-4">
+      <div className="flex items-center justify-between px-4 py-4">
         <span className="text-sm font-semibold tracking-tight">MindFlow AI</span>
+        <ThemeToggle />
       </div>
       <Separator />
 
@@ -56,6 +59,15 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
           ))}
         </div>
       </ScrollArea>
+      <Separator />
+
+      <a
+        href="/api/export"
+        download
+        className="flex items-center gap-1.5 px-4 py-3 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <Download className="size-3.5" /> Download my data
+      </a>
     </aside>
   );
 }

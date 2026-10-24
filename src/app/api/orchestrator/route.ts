@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getProvider } from "@/lib/ai-provider";
 import { db } from "@/lib/db";
 import { buildAssistantPrompt, searchKnowledgeBrain } from "@/lib/knowledge-brain";
+import { checkAndIncrementRateLimit } from "@/lib/rate-limit";
 
 const RequestSchema = z.object({
   task: z.string().min(1),
@@ -57,6 +58,14 @@ export async function POST(req: Request) {
   }
 
   const { task, projectId, conversationId } = parsed.data;
+
+  const rateLimit = await checkAndIncrementRateLimit("ai_calls");
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: `Daily AI call limit reached (${rateLimit.limit}/day). Try again tomorrow.` },
+      { status: 429 },
+    );
+  }
 
   const project = projectId
     ? await db.project.findUnique({ where: { id: projectId } })

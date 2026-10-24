@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { CopilotPanel } from "@/components/workspace/copilot-panel";
 import { NewProjectDialog } from "@/components/workspace/new-project-dialog";
 import { QuickActionCard } from "@/components/workspace/quick-action-card";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { db } from "@/lib/db";
 import type { Project } from "@/lib/types";
 
@@ -117,12 +118,15 @@ async function RecentProjects() {
 
 export default function Home() {
   return (
-    <div className="flex h-full flex-1">
-      <Suspense fallback={<SidebarFallback />}>
-        <ProjectSidebar />
-      </Suspense>
-
-      <main className="flex-1 overflow-y-auto px-8 py-8">
+    <WorkspaceShell
+      sidebar={
+        <Suspense fallback={<SidebarFallback />}>
+          <ProjectSidebar />
+        </Suspense>
+      }
+      copilot={<CopilotPanel />}
+    >
+      <main className="min-w-0 flex-1 overflow-y-auto px-8 py-8">
         <div className="mx-auto flex max-w-3xl flex-col gap-8">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -162,8 +166,6 @@ export default function Home() {
           <NewProjectDialog />
         </div>
       </main>
-
-      <CopilotPanel />
-    </div>
+    </WorkspaceShell>
   );
 }

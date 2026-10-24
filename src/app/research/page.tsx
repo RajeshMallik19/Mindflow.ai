@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { ResearchWorkspace } from "@/components/workspace/research-workspace";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { db } from "@/lib/db";
 import type { Project } from "@/lib/types";
 
@@ -27,14 +28,16 @@ async function ResearchSidebar() {
 
 export default function ResearchPage() {
   return (
-    <div className="flex h-full flex-1">
-      <Suspense fallback={<SidebarFallback />}>
-        <ResearchSidebar />
-      </Suspense>
-
-      <main className="flex-1 overflow-y-auto">
+    <WorkspaceShell
+      sidebar={
+        <Suspense fallback={<SidebarFallback />}>
+          <ResearchSidebar />
+        </Suspense>
+      }
+    >
+      <main className="min-w-0 flex-1 overflow-y-auto">
         <ResearchWorkspace />
       </main>
-    </div>
+    </WorkspaceShell>
   );
 }

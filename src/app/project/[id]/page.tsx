@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { CopilotPanel } from "@/components/workspace/copilot-panel";
 import { PipelineView } from "@/components/workspace/pipeline-view";
+import { ProjectHeaderMenu } from "@/components/workspace/project-header-menu";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { parseFlowArtifact } from "@/lib/flow-artifact";
 import { db } from "@/lib/db";
 import { normalizeStoredResearchBrief, STAGES, type StageId } from "@/lib/pipeline";
@@ -88,15 +90,22 @@ async function ProjectContent({ id }: { id: string }) {
 
   return (
     <main className="flex min-w-0 flex-1 flex-col">
-      <div className="border-b px-6 py-3">
-        <h1 className="text-lg font-semibold tracking-tight">
-          {project.name}
-        </h1>
-        {project.description && (
-          <p className="text-sm text-muted-foreground">
-            {project.description}
-          </p>
-        )}
+      <div className="flex items-start justify-between border-b px-6 py-3">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">
+            {project.name}
+          </h1>
+          {project.description && (
+            <p className="text-sm text-muted-foreground">
+              {project.description}
+            </p>
+          )}
+        </div>
+        <ProjectHeaderMenu
+          projectId={project.id}
+          name={project.name}
+          description={project.description}
+        />
       </div>
 
       <div className="flex-1 overflow-hidden">
@@ -118,17 +127,18 @@ async function ProjectWorkspace({
   const { id } = await params;
 
   return (
-    <div className="flex h-full flex-1">
-      <Suspense fallback={<ProjectSidebarFallback />}>
-        <ProjectSidebar />
-      </Suspense>
-
+    <WorkspaceShell
+      sidebar={
+        <Suspense fallback={<ProjectSidebarFallback />}>
+          <ProjectSidebar />
+        </Suspense>
+      }
+      copilot={<CopilotPanel projectId={id} />}
+    >
       <Suspense fallback={<ProjectContentFallback />}>
         <ProjectContent id={id} />
       </Suspense>
-
-      <CopilotPanel projectId={id} />
-    </div>
+    </WorkspaceShell>
   );
 }
 

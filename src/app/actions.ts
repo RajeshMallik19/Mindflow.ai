@@ -22,6 +22,24 @@ export async function createProjectAndRedirect(name: string, description: string
   redirect(`/project/${project.id}`);
 }
 
+export async function renameProject(projectId: string, name: string, description: string) {
+  const trimmedName = name.trim();
+  if (!trimmedName) return;
+
+  await db.project.update({
+    where: { id: projectId },
+    data: { name: trimmedName, description: description.trim() },
+  });
+  revalidatePath("/");
+  revalidatePath(`/project/${projectId}`);
+}
+
+export async function deleteProject(projectId: string) {
+  await db.project.delete({ where: { id: projectId } });
+  revalidatePath("/");
+  redirect("/");
+}
+
 export async function createProjectFromResearch(
   name: string,
   topic: string,

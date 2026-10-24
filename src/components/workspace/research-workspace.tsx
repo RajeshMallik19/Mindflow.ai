@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ResearchView } from "@/components/workspace/stage-views";
+import { toFriendlyMessage } from "@/lib/friendly-error";
 import type { ResearchBrief, StoredResearchBrief } from "@/lib/pipeline";
 
 export function ResearchWorkspace() {
@@ -44,7 +45,7 @@ export function ResearchWorkspace() {
       setMode("simple");
       setProjectName(t.length > 60 ? `${t.slice(0, 57)}...` : t);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
       setRunning(false);
     }
@@ -73,7 +74,7 @@ export function ResearchWorkspace() {
       setResearch((prev) => (prev ? { ...prev, gossip: body.data } : prev));
       setMode("gossip");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"));
     } finally {
       setConvertingGossip(false);
     }

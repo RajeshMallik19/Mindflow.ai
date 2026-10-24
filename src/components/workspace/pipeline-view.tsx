@@ -24,6 +24,7 @@ import {
   UxStrategyView,
 } from "@/components/workspace/stage-views";
 import { WireframeCanvas } from "@/components/workspace/wireframe-canvas";
+import { toFriendlyMessage } from "@/lib/friendly-error";
 import { layoutIaSitemap } from "@/lib/ia-layout";
 import type { FlowData } from "@/lib/flow-artifact";
 import { STAGES, type StageId, type StoredResearchBrief } from "@/lib/pipeline";
@@ -78,7 +79,7 @@ export function PipelineView({
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
-        [stageId]: err instanceof Error ? err.message : "Something went wrong",
+        [stageId]: toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"),
       }));
     } finally {
       setRunningStage(null);
@@ -108,7 +109,7 @@ export function PipelineView({
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
-        research_brief: err instanceof Error ? err.message : "Something went wrong",
+        research_brief: toFriendlyMessage(err instanceof Error ? err.message : "Something went wrong"),
       }));
     } finally {
       setConvertingGossip(false);

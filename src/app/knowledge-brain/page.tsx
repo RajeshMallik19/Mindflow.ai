@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/workspace/app-sidebar";
 import { KnowledgeBrainSearch } from "@/components/workspace/knowledge-brain-search";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { db } from "@/lib/db";
 import type { Project } from "@/lib/types";
 
@@ -27,14 +28,16 @@ async function KnowledgeBrainSidebar() {
 
 export default function KnowledgeBrainPage() {
   return (
-    <div className="flex h-full flex-1">
-      <Suspense fallback={<SidebarFallback />}>
-        <KnowledgeBrainSidebar />
-      </Suspense>
-
-      <main className="flex-1 overflow-y-auto">
+    <WorkspaceShell
+      sidebar={
+        <Suspense fallback={<SidebarFallback />}>
+          <KnowledgeBrainSidebar />
+        </Suspense>
+      }
+    >
+      <main className="min-w-0 flex-1 overflow-y-auto">
         <KnowledgeBrainSearch />
       </main>
-    </div>
+    </WorkspaceShell>
   );
 }

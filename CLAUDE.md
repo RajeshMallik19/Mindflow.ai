@@ -12,7 +12,11 @@ file and has no effect in Claude Code. This file is the equivalent.)
 
 - **$0 recurring cost.** No paid APIs, no paid hosting, no cloud VM. Every
   dependency needs a real free tier or must run locally.
-- **Single user, no auth/signup.** There is exactly one user, forever.
+- **Single user.** No multi-user accounts/signup, ever. A lightweight
+  single shared-password gate exists for public deployment (`APP_PASSWORD`,
+  see `src/proxy.ts`) — that's a deterrent, not a real auth system, and is
+  the deliberately correct scope for this project. Don't build anything
+  beyond it (no OAuth, no user table, no sessions-per-user).
 - **Owner's own accounts only** for anything cloud (GitHub, Vercel,
   Supabase) — never a shared, third-party, or company account. This app is
   explicitly meant to survive the owner leaving their job.
@@ -23,8 +27,13 @@ file and has no effect in Claude Code. This file is the equivalent.)
 
 - Don't do manual browser UI testing on the owner's behalf — they test
   interactions themselves. Verify your work via API calls, type-checking
-  (`npx tsc --noEmit`), lint (`npm run lint`), and direct DB queries, and
-  say plainly what you did and didn't verify.
+  (`npx tsc --noEmit`), lint (`npm run lint`), the Vitest suite (`npm test`),
+  and direct DB queries, and say plainly what you did and didn't verify.
+- Before changing any stored-artifact shape, check whether real projects
+  already have data in the old shape (query the live DB) — this has
+  happened twice already (research_brief, wireframes) and both times caused
+  a real crash that was only caught by checking first. Add a back-compat
+  normalizer, not just a type change.
 - Before trusting a new AI provider/model, test it directly against its raw
   API first (see `.docs/API_SPEC.md` for a real incident where a model's
   free-tier quota was silently exhausted and looked like a broken app).

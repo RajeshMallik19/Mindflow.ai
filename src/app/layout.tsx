@@ -17,12 +17,23 @@ export const metadata: Metadata = {
   description: "Personal, local-first AI product design workspace.",
 };
 
+const NO_FLASH_THEME_SCRIPT = `(function(){
+  try {
+    var stored = localStorage.getItem("theme");
+    var dark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.classList.toggle("dark", dark);
+  } catch (e) {}
+})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
+      </head>
       <body className="flex h-full flex-col overflow-hidden">{children}</body>
     </html>
   );

@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import ReactMarkdown from "react-markdown";
+import { toFriendlyMessage } from "@/lib/friendly-error";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -168,9 +169,9 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
         updateAssistant("(The model returned an empty response.)");
       }
     } catch (err) {
-      const errorMessage = `Something went wrong: ${
-        err instanceof Error ? err.message : String(err)
-      }`;
+      const errorMessage = toFriendlyMessage(
+        err instanceof Error ? err.message : String(err),
+      );
 
       updateAssistant(
         assistantContent

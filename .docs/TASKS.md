@@ -95,6 +95,42 @@ a new session should scan to know what's done and what's next.
       wireframes/IA artifacts; asking the copilot "what was that Hackloop
       project about again?" (no project context) answered correctly from
       real stored data, not a guess.
+- [x] **Full product-quality pass**, prompted by an honest multi-role
+      self-review (PM/designer/frontend/backend/QA/support angles) that
+      surfaced real, confirmed gaps by checking the actual code, not just
+      recalling from memory:
+      - **Project rename & delete** — the CRUD completion that was missing
+        entirely (`project-header-menu.tsx`, `renameProject`/`deleteProject`
+        actions).
+      - **Dark mode actually works now** — `globals.css` had `.dark`
+        variables that nothing ever applied; added a no-flash theme script
+        in `layout.tsx` + a manual toggle in the sidebar.
+      - **Friendly error messages** (`src/lib/friendly-error.ts`) — raw API
+        errors (`"Gemini API error: 429 ..."`) are now translated to plain
+        sentences across the copilot, research page, and pipeline view.
+      - **Data export** — `GET /api/export` dumps every project, artifact,
+        and conversation as downloadable JSON; "Download my data" link in
+        the sidebar. Directly closes the gap where the project's own
+        "yours forever" philosophy had no actual way to get data out.
+      - **DB-backed rate limiting** (`src/lib/rate-limit.ts`) on every
+        AI-calling route — reuses the `UserPreference` table as a
+        day-scoped counter instead of in-memory state, specifically because
+        in-memory counters don't survive Vercel's serverless instances.
+        Verified the increment/limit logic directly against the DB.
+      - **Password gate** (`src/proxy.ts` — Next 16 renamed `middleware.ts`
+        to `proxy.ts`, migrated to the new convention) — a single shared
+        password via `APP_PASSWORD`, skipped entirely if that env var isn't
+        set so local dev stays frictionless. **This must be set before the
+        upcoming Vercel deploy** — with it unset, a public URL would have
+        zero authentication.
+      - **Mobile-responsive layout** — new `workspace-shell.tsx` shared
+        across all 4 pages; sidebar/copilot collapse into Sheet slide-outs
+        below the `md` breakpoint instead of 3 fixed-width columns breaking
+        on a phone.
+      - **A real test suite** — added Vitest, wrote unit tests for the two
+        back-compat detectors (`normalizeStoredResearchBrief`,
+        `isLegacyWireframes`) that have *already* caused real production
+        crashes this session, plus `layoutIaSitemap`. `npm test` to run.
 
 ## Recommended build order for the rest (per PRD.md §7)
 
@@ -107,9 +143,10 @@ a new session should scan to know what's done and what's next.
 5. ~~Personal Knowledge Brain v1~~ **done** (full-text search). True
    vector/RAG embeddings remain a later upgrade, not urgent.
 6. **Next up:** Deploy to Vercel (owner's own account, already connected during
-   development) — link the GitHub repo, set env vars, deploy. Decide
-   whether the deployed copy and local dev share one Supabase database
-   (leaning yes, for simplicity) before doing this.
+   development) — link the GitHub repo, set env vars (**including
+   `APP_PASSWORD` — do not deploy without it**), deploy. Decide whether the
+   deployed copy and local dev share one Supabase database (leaning yes,
+   for simplicity) before doing this.
 
 ## Backlog (not started, lower priority than the above)
 
@@ -126,7 +163,10 @@ a new session should scan to know what's done and what's next.
 
 - **$0 recurring cost.** Every new dependency needs a workable free tier or
   must run locally.
-- **Single user, no auth.** Don't add a login/signup flow.
+- **Single user.** Don't add multi-user accounts/signup. A lightweight
+  single shared-password gate exists (`APP_PASSWORD`) for when this is
+  publicly deployed — that's a deterrent gate, not a real auth system, and
+  that's an intentional, correct scope call for this project.
 - **Owner's own accounts only** for anything cloud (GitHub, Vercel,
   Supabase) — never a shared or company account.
 - Don't do manual browser UI testing on the owner's behalf — verify via API

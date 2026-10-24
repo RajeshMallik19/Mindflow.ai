@@ -10,6 +10,7 @@ import {
   ResearchBriefSchema,
   type StoredResearchBrief,
 } from "@/lib/pipeline";
+import { checkAndIncrementRateLimit } from "@/lib/rate-limit";
 
 const RequestSchema = z.object({
   projectId: z.string(),
@@ -23,6 +24,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const { projectId } = parsed.data;
+
+  const rateLimit = await checkAndIncrementRateLimit("ai_calls");
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: `Daily AI call limit reached (${rateLimit.limit}/day). Try again tomorrow.` },
+      { status: 429 },
+    );
+  }
 
   const artifact = await db.artifact.findFirst({
     where: { projectId, type: "research_brief" },
