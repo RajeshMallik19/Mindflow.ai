@@ -13,15 +13,10 @@ type CopilotMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  subagentName?: string;
 };
 
 type StreamEvent =
-  | {
-      type: "meta";
-      conversationId: string;
-      subagent: { id: string; name: string; title: string };
-    }
+  | { type: "meta"; conversationId: string }
   | { type: "chunk"; text: string }
   | { type: "done" }
   | { type: "error"; error: string };
@@ -30,7 +25,7 @@ const WELCOME_MESSAGE: CopilotMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "I'm the MindFlow copilot. Ask me anything, or give me a task and I'll route it to the right subagent.",
+    "I'm the MindFlow assistant. Ask me anything — I'll use your project history and knowledge base to help.",
 };
 
 export function CopilotPanel({ projectId }: { projectId?: string }) {
@@ -47,7 +42,7 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
 
     fetch(`/api/orchestrator?projectId=${encodeURIComponent(projectId)}`)
       .then((res) => res.json())
-      .then((data: { conversationId: string | null; messages: Array<{ id: string; role: string; content: string; subagentName?: string }> }) => {
+      .then((data: { conversationId: string | null; messages: Array<{ id: string; role: string; content: string }> }) => {
         if (cancelled) return;
 
         if (data.conversationId && data.messages.length > 0) {
@@ -57,7 +52,6 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
               id: m.id,
               role: m.role === "user" ? "user" : "assistant",
               content: m.content,
-              subagentName: m.subagentName,
             })),
           );
         }
@@ -130,13 +124,6 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
       function handleEvent(event: StreamEvent) {
         if (event.type === "meta") {
           setConversationId(event.conversationId);
-          setMessages((prev) =>
-            prev.map((message) =>
-              message.id === assistantId
-                ? { ...message, subagentName: event.subagent.name }
-                : message,
-            ),
-          );
         } else if (event.type === "chunk") {
           assistantContent += event.text;
 
@@ -213,12 +200,6 @@ export function CopilotPanel({ projectId }: { projectId?: string }) {
 
           {messages.map((message) => (
             <div key={message.id} className="flex flex-col gap-1">
-              {message.subagentName && (
-                <span className="px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {message.subagentName}
-                </span>
-              )}
-
               <div
                 className={
                   message.role === "assistant"

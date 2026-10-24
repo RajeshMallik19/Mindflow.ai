@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { SUBAGENTS } from "@/lib/subagents";
 import type { Project } from "@/lib/types";
 
 export function AppSidebar({ projects }: { projects: Project[] }) {
@@ -27,6 +25,12 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
           className="block rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
         >
           Research
+        </Link>
+        <Link
+          href="/knowledge-brain"
+          className="block rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-accent"
+        >
+          Knowledge Brain
         </Link>
       </nav>
       <Separator />
@@ -52,23 +56,6 @@ export function AppSidebar({ projects }: { projects: Project[] }) {
           ))}
         </div>
       </ScrollArea>
-      <Separator />
-
-      <div className="px-4 py-3">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Subagents
-        </span>
-        <div className="mt-2 flex flex-col gap-1.5">
-          {SUBAGENTS.map((agent) => (
-            <div key={agent.id} className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{agent.name}</span>
-              <Badge variant="secondary" className="text-[10px]">
-                {agent.title}
-              </Badge>
-            </div>
-          ))}
-        </div>
-      </div>
     </aside>
   );
 }

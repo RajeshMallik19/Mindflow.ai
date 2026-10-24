@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getProvider } from "@/lib/ai-provider";
 import { db } from "@/lib/db";
-import { routeTask } from "@/lib/orchestrator";
-import { buildSubagentPrompt } from "@/lib/subagent-prompts";
-import { SUBAGENTS } from "@/lib/subagents";
+import { buildAssistantPrompt, searchKnowledgeBrain } from "@/lib/knowledge-brain";
 
 const RequestSchema = z.object({
   task: z.string().min(1),
@@ -44,7 +42,6 @@ export async function GET(req: Request) {
       id: m.id,
       role: m.role,
       content: m.content,
-      subagentName: SUBAGENTS.find((s) => s.id === m.subagentId)?.name,
     })),
   });
 }
@@ -60,8 +57,17 @@ export async function POST(req: Request) {
   }
 
   const { task, projectId, conversationId } = parsed.data;
-  const subagent = routeTask(task);
-  const prompt = buildSubagentPrompt(subagent, task);
+
+  const project = projectId
+    ? await db.project.findUnique({ where: { id: projectId } })
+    : null;
+
+  const hits = await searchKnowledgeBrain(task);
+  const prompt = buildAssistantPrompt({
+    task,
+    project: project ? { name: project.name, description: project.description } : undefined,
+    hits,
+  });
 
   let conversation;
   try {
@@ -136,15 +142,7 @@ export async function POST(req: Request) {
       };
 
       try {
-        send({
-          type: "meta",
-          conversationId: conversation.id,
-          subagent: {
-            id: subagent.id,
-            name: subagent.name,
-            title: subagent.title,
-          },
-        });
+        send({ type: "meta", conversationId: conversation.id });
 
         for await (const chunk of provider.stream(prompt)) {
           output += chunk;
@@ -154,8 +152,7 @@ export async function POST(req: Request) {
         await db.message.create({
           data: {
             conversationId: conversation.id,
-            role: "subagent",
-            subagentId: subagent.id,
+            role: "assistant",
             content: output,
           },
         });
